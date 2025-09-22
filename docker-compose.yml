@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: portaluser
+      POSTGRES_PASSWORD: portalpass
+      POSTGRES_DB: portaldb
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    command: bash -c "until pg_isready -h db -p 5432; do sleep 1; done;
+                      python manage.py migrate &&
+                      python manage.py runserver 0.0.0.0:8000"
+    environment:
+      # Django
+      DJANGO_DEBUG: "1"
+      DJANGO_SECRET_KEY: "dev-secret-key"
+      # DB (Django leerá esto)
+      POSTGRES_DB: portaldb
+      POSTGRES_USER: portaluser
+      POSTGRES_PASSWORD: portalpass
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  db_data:
