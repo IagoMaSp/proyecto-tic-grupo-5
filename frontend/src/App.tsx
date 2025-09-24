@@ -1,35 +1,41 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
-function App() {
-  const [count, setCount] = useState(0)
-
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div>
+      <header>
+        <h1>UM Exchange</h1>
+        <nav>
+          <a href="#universidades">Universidades</a>
+          <a href="#comparar">Comparar</a>
+          <a href="#reviews">Reviews</a>
+          <a href="#about">Acerca</a>
+        </nav>
+      </header>
 
-export default App
+      <main>
+        <section id="universidades">
+          <h2>Universidades</h2>
+          <p>Lista de universidades acá…</p>
+        </section>
+
+        <section id="comparar">
+          <h2>Comparar</h2>
+          <p>Acá irá el comparador…</p>
+        </section>
+
+        <section id="reviews">
+          <h2>Reviews</h2>
+          <p>Testimonios de alumnos…</p>
+        </section>
+
+        <section id="about">
+          <h2>Acerca</h2>
+          <p>Proyecto de la UM para elegir intercambio.</p>
+        </section>
+      </main>
+
+      <footer>
+        <p>© UM Exchange</p>
+      </footer>
+    </div>
+  );
+}
