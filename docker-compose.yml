@@ -27,6 +27,7 @@ services:
       POSTGRES_PASSWORD: portalpass
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
+      DJANGO_SETTINGS_MODULE: src.settings
     volumes:
       - ./backend:/app
     ports:
