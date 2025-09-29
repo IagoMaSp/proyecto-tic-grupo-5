@@ -40,7 +40,7 @@ INSTALLED_APPS = [ # una app es un “módulo” dentro del proyecto donde viven
     'rest_framework',
     'django_filters', # filtros DRF
     'corsheaders', # CORS
-    # 'universities', vamos a tener varios más a futuro
+    'universities',
 ]
 
 MIDDLEWARE = [
