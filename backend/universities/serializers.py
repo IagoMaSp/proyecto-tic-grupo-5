@@ -6,12 +6,12 @@ class UniversitySerializer(serializers.ModelSerializer):
         model = University
         fields = '__all__'
 
-class UniversityCreateUpdateSerializer(serializers.ModelSerializer):
+class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = '__all__'
 
-class UniversityListSerializer(serializers.ModelSerializer):
+class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = '__all__'
