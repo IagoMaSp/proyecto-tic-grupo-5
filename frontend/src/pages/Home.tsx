@@ -29,16 +29,16 @@ export default function Home() {
             <h1 className="headline">Encontrá tu intercambio ideal</h1>
             <p className="sub">
               Compará universidades por ranking QS, costo de vida, vida social y seguridad.
-              Leé experiencias reales de alumnos UM y decidí con datos.
+              Leé experiencias reales de alumnos UM y decidí con datos actualizados.
             </p>
             <div className="cta-row">
               <Link to="/universities" className="btn primary">Explorar universidades</Link>
               <Link to="/compare" className="btn ghost">Comparar destinos</Link>
             </div>
             <ul className="bullets">
-              <li>🔎 Filtros por país, idioma y ranking.</li>
-              <li>⚖️ Comparaciones lado a lado.</li>
-              <li>⭐ Reviews por semestre y promedio.</li>
+              <li>Filtros por país, idioma y ranking.</li>
+              <li>Comparaciones lado a lado.</li>
+              <li>Reviews por semestre y promedio.</li>
             </ul>
           </div>
         </section>

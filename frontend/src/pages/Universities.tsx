@@ -18,7 +18,7 @@ export default function Universities() {
           {MOCK.map(u => (
             <div key={u.name} className="feature" style={{padding:20}}>
               <div className="t" style={{marginBottom:8}}>{u.name}</div>
-              <div className="d">🇪🇸 {u.country}</div>
+              <div className="d"> {u.country}</div>
               <div className="d" style={{marginTop:8}}><b>QS</b>: {u.qs}</div>
             </div>
           ))}
