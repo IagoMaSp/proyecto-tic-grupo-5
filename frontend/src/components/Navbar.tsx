@@ -1,14 +1,21 @@
 import { NavLink } from "react-router-dom";
 
-const base = "px-3 py-2 rounded-md text-sm";
 export default function Navbar() {
   return (
-    <nav className="border-b p-3 flex gap-2">
-      <NavLink to="/" className={({isActive})=>`${base} ${isActive?'underline':''}`}>Inicio</NavLink>
-      <NavLink to="/universities" className={({isActive})=>`${base} ${isActive?'underline':''}`}>Universidades</NavLink>
-      <NavLink to="/compare" className={({isActive})=>`${base} ${isActive?'underline':''}`}>Comparar</NavLink>
-      <NavLink to="/reviews" className={({isActive})=>`${base} ${isActive?'underline':''}`}>Reviews</NavLink>
-      <NavLink to="/about" className={({isActive})=>`${base} ${isActive?'underline':''}`}>Acerca</NavLink>
+    <nav className="navbar">
+      <div className="navbar-inner">
+        <div className="brand">
+          <a href="/">UM Exchange</a>
+          
+        </div>
+        <div className="menu">
+          <NavLink to="/" end className={({isActive}) => `link ${isActive ? 'active':''}`}>Inicio</NavLink>
+          <NavLink to="/universities" className={({isActive}) => `link ${isActive ? 'active':''}`}>Universidades</NavLink>
+          <NavLink to="/compare" className={({isActive}) => `link ${isActive ? 'active':''}`}>Comparar</NavLink>
+          <NavLink to="/reviews" className={({isActive}) => `link ${isActive ? 'active':''}`}>Reviews</NavLink>
+          <NavLink to="/about" className={({isActive}) => `link ${isActive ? 'active':''}`}>Sobre el proyecto</NavLink>
+        </div>
+      </div>
     </nav>
   );
 }
