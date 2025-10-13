@@ -14,6 +14,8 @@ class University(models.Model):
     status = models.CharField(max_length=255)
     continent = models.CharField(max_length=255)
 
+    visits_count = models.IntegerField(default=0, help_text="Contador para medir la popularidad de la universidad.")
+
     def __str__(self):
         return self.name
     
