@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver 
 
-# Create your models here.
 class University(models.Model):
     name = models.CharField(max_length=255, null=False, blank=False, unique=True)
     country = models.CharField(max_length=255, null=False, blank=False)
@@ -42,13 +41,30 @@ class Profile(models.Model):
     # Relación uno a uno con el modelo de usuario de Django.
     # Cada usuario tendrá un solo perfil, y cada perfil pertenece a un solo usuario.
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    mail= models.EmailField(max_length=255, null=False, blank=False, unique=True)
-    
+
     # Campo de la foto de perfil
     profile_photo = models.ImageField(upload_to='profile_photos/', blank=True, null=True)
 
     def __str__(self):
         return f'Perfil de {self.user.username}'
+
+class Wishlist(models.Model):    
+    # Relation: User --- 1 --- n --- Wishlist
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wishlists', null=False, blank=False)
+    
+    # Relation: University --- n --- m --- Wishlist
+    universities = models.ManyToManyField(University, related_name='wishlists', blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+            fields=['name', 'user'],
+            name='unique_wishlist_per_user')
+        ]
+
+    def __str__(self):
+        return f'Wishlist {self.name} de {self.user.username}'
+
 
 class Review(models.Model):
     description = models.CharField(max_length=511, null=False, blank=False)
