@@ -14,7 +14,7 @@ class University(models.Model):
     continent_choices = [('Africa', 'África'),("America", "América"),("Asia", "Asia"),("Europe", "Europa"),("Oceania", "Oceania"),]
     continent = models.CharField(max_length=50, choices=continent_choices, null=False, blank=False)
 
-    visits_count = models.IntegerField(default=0, help_text="Contador para medir la popularidad de la universidad.")
+    visits_count = models.IntegerField(default=0, help_text="Número de veces que se ha visto la universidad")
 
     def __str__(self):
         return self.name
