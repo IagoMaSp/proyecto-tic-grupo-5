@@ -1,28 +1,57 @@
 from django.shortcuts import render
 from django.db.models import Avg, F, ExpressionWrapper, FloatField
-from rest_framework import viewsets
-from .models import University, Review, Profile
-from .serializers import UniversitySerializer, ReviewSerializer, ProfileSerializer
-from .filters import UniversityFilter
+from rest_framework import viewsets, filters, generics, permissions 
+from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
-# Create your views here.
+from django.contrib.auth.models import User #
+from .models import University, Review, Profile
+from .serializers import (
+    UniversitySerializer, 
+    ReviewSerializer, 
+    ProfileSerializer,
+    RegisterSerializer 
+) 
+from .filters import UniversityFilter
+from rest_framework.exceptions import PermissionDenied
+
+
+# Vista de Registro (Sign Up) - POST /api/register/
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    # Permitir a cualquiera acceder a esta vista para poder registrarse
+    permission_classes = (permissions.AllowAny,) 
+    serializer_class = RegisterSerializer
+
+# Vista para ver y actualizar el perfil del usuario autenticado - GET/PUT /api/profile/
+class ProfileView(generics.RetrieveUpdateAPIView):
+    # Solo usuarios autenticados (con Token JWT válido) pueden acceder
+    permission_classes = (permissions.IsAuthenticated,) 
+    serializer_class = ProfileSerializer
+
+    # Asegura que solo se pueda acceder al perfil del usuario logueado
+    def get_object(self):
+        # Devuelve el objeto Profile relacionado al usuario actual de la petición
+        try:
+            return Profile.objects.get(user=self.request.user)
+        except Profile.DoesNotExist:
+            raise PermissionDenied("El perfil no existe para el usuario autenticado.")
+
+
 class UniversityViewSet(viewsets.ModelViewSet):
     queryset = University.objects.all()
     serializer_class = UniversitySerializer
 
-    filter_backends = [DjangoFilterBackend] 
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter] 
     filterset_class = UniversityFilter
 
-    # Añade 'overall_avg_rating' para que el frontend pueda ordenar por este campo
-    ordering_fields = ['qs_rating_top', 'views', 'overall_avg_rating'] 
+    ordering_fields = ['qs_rating_top', 'visits_count', 'overall_avg_rating'] 
     ordering = ['qs_rating_top'] 
     
-    # Sobrescribimos el get_queryset para añadir la lógica de promedio
     def get_queryset(self):
-        queryset = self.queryset 
+        queryset = super().get_queryset()
 
-        # Usamos 'review' asumiendo que es el related_name o el nombre del modelo en minúscula del ForeignKey
+        # CÁLCULO DE PROMEDIOS (ANOTACIÓN)
         queryset = queryset.annotate(
             avg_social=Avg('review__social_rating'),
             avg_academic=Avg('review__academic_rating'),
@@ -37,22 +66,40 @@ class UniversityViewSet(viewsets.ModelViewSet):
         return queryset
     
     def retrieve(self, request, *args, **kwargs):
-        # Obtener el objeto de la universidad antes de responder
+        # Incremento del contador de visitas (visits_count)
         instance = self.get_object()
-        
-        # Aumentar el contador de vistas en 1
-        instance.views += 1
+        instance.visits_count += 1 
         instance.save()
         
-        # Llamar al método original para continuar con la respuesta de la API
         return super().retrieve(request, *args, **kwargs)
 
 
-
 class ReviewViewSet(viewsets.ModelViewSet):
+    # Solo usuarios autenticados pueden crear/modificar reseñas
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
 
-class ProfileViewSet(viewsets.ModelViewSet()):
+    # Sobrescribir perform_create para asignar el usuario automáticamente
+    def perform_create(self, serializer):
+        # Antes de guardar, asigna el usuario autenticado al campo 'user' de la reseña
+        serializer.save(user=self.request.user)
+    
+
+class ProfileViewSet(viewsets.ModelViewSet):
+    # Limitar el acceso a solo lectura para listar perfiles
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
+    
+    # Sobrescribir queryset para que los usuarios normales solo vean su propio perfil
+    # Si dejas la lista abierta, la gente podrá ver todas las fotos de perfil.
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            # Los usuarios solo ven su propio perfil
+            return Profile.objects.filter(user=self.request.user)
+        return Profile.objects.none() # Anónimo no ve nada
+
+    # Desactivar la creación a través del ViewSet (el registro maneja la creación)
+    def create(self, request, *args, **kwargs):
+        return Response({"detail": "La creación de perfiles se realiza a través del endpoint de registro (/api/register/)."}, status=403)
