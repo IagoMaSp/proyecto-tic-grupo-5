@@ -1,8 +1,9 @@
 from django.shortcuts import render
-from django.db.models import Avg, F, ExpressionWrapper, FloatField
-from rest_framework import viewsets, filters, generics, permissions 
+from django.db.models import Avg, F, ExpressionWrapper, FloatField, Count
+from rest_framework import viewsets, filters, generics, permissions
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import action
 
 from django.contrib.auth.models import User #
 from .models import University, Review, Profile
@@ -45,7 +46,7 @@ class UniversityViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter] 
     filterset_class = UniversityFilter
 
-    ordering_fields = ['qs_rating_top', 'visits_count', 'overall_avg_rating'] 
+    ordering_fields = ['qs_rating_top', 'visits_count', 'overall_avg_rating', 'reviews_count'] 
     ordering = ['qs_rating_top'] 
     
     def get_queryset(self):
@@ -53,6 +54,7 @@ class UniversityViewSet(viewsets.ModelViewSet):
 
         # CÁLCULO DE PROMEDIOS (ANOTACIÓN)
         queryset = queryset.annotate(
+            reviews_count = Count('reviews'),
             avg_social=Avg('review__social_rating'),
             avg_academic=Avg('review__academic_rating'),
             avg_place=Avg('review__place_rating')
@@ -73,7 +75,14 @@ class UniversityViewSet(viewsets.ModelViewSet):
         
         return super().retrieve(request, *args, **kwargs)
 
+    @action(detail=False, methods=['get'])
+    def top_reviews(self, request):
+        query_set = self.get_queryset()
 
+        top_universities = query_set.order_by('-reviews_count')[:10]
+
+        serializer = self.get_serializer(top_universities, many=True)  
+        return Response(serializer.data)
 class ReviewViewSet(viewsets.ModelViewSet):
     # Solo usuarios autenticados pueden crear/modificar reseñas
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]

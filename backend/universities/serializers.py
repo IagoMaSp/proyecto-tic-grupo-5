@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from .models import University, Profile, Review, PhotosUniversity, Wishlist # Asegúrate de importar todos los modelos necesarios
 
 class UniversitySerializer(serializers.ModelSerializer):
+    review_count = serializers.IntegerField(read_only=True)
+    
     class Meta:
         model = University
         fields = '__all__'
