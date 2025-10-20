@@ -13,9 +13,9 @@ class UniversityFilter(django_filters.FilterSet):
     continent = django_filters.CharFilter(lookup_expr='icontains')
 
     # Filtro de Ranking QS (min_qs)
-    # Busca universidades cuyo qs_rating_top sea menor o igual al valor enviado 
+    # Busca universidades cuyo qs_rating_bottom sea mayor o igual al valor enviado 
     # (es decir, un mejor ranking).
-    min_qs = django_filters.NumberFilter(field_name='qs_rating_top', lookup_expr='lte') 
+    min_qs = django_filters.NumberFilter(field_name='qs_rating_bottom', lookup_expr='gte') 
 
     # Filtros para el Promedio General de Notas (Overall Average Rating)
     # Permite al usuario buscar universidades con un promedio general MÍNIMO.
