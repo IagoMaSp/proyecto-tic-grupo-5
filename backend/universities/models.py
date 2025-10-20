@@ -57,13 +57,11 @@ class Wishlist(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-            fields=['name', 'user'],
-            name='unique_wishlist_per_user')
+            models.UniqueConstraint(fields=['user'], name='unique_user_university_wishlist')
         ]
 
     def __str__(self):
-        return f'Wishlist {self.name} de {self.user.username}'
+        return f'Wishlist de {self.user.username}'
 
 
 class Review(models.Model):
