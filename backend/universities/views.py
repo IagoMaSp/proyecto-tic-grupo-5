@@ -3,7 +3,8 @@ from django.db.models import Avg, F, ExpressionWrapper, FloatField, Count
 from rest_framework import viewsets, filters, generics, permissions
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.decorators import action
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import action, api_view, authentication_classes
 
 from django.contrib.auth.models import User #
 from .models import University, Review, Profile
@@ -52,12 +53,13 @@ class UniversityViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
+        queryset = queryset.prefetch_related('reviews__user__profile') 
         # CÁLCULO DE PROMEDIOS (ANOTACIÓN)
         queryset = queryset.annotate(
             reviews_count = Count('reviews'),
-            avg_social=Avg('review__social_rating'),
-            avg_academic=Avg('review__academic_rating'),
-            avg_place=Avg('review__place_rating')
+            avg_social=Coalesce(Avg('reviews__social_rating'), 0.0),      # Default a 0.0
+            avg_academic=Coalesce(Avg('reviews__academic_rating'), 0.0),
+            avg_place=Coalesce(Avg('reviews__place_rating'), 0.0)
         ).annotate(
             overall_avg_rating=ExpressionWrapper(
                 (F('avg_social') + F('avg_academic') + F('avg_place')) / 3.0,
@@ -112,3 +114,18 @@ class ProfileViewSet(viewsets.ModelViewSet):
     # Desactivar la creación a través del ViewSet (el registro maneja la creación)
     def create(self, request, *args, **kwargs):
         return Response({"detail": "La creación de perfiles se realiza a través del endpoint de registro (/api/register/)."}, status=403)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout(request):
+    """
+    POST /api/logout/
+    Body: {"refresh": "token..."}
+    """
+    try:
+        refresh_token = request.data["refresh"]
+        token = RefreshToken(refresh_token)
+        token.blacklist()  # Invalida el token
+        return Response({"detail": "Logout exitoso"}, status=200)
+    except Exception as e:
+        return Response({"detail": "Token inválido"}, status=400)

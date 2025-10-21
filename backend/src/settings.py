@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -138,3 +139,53 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # URL para acceder a los archivos subidos
 MEDIA_URL = '/media/'
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Vite dev server
+    "http://localhost:3000",  # Por si cambias a otro puerto
+    "http://127.0.0.1:5173",  # Alternativa con IP
+]
+
+REST_FRAMEWORK = {
+    # Sistema de autenticación
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # Opcional: mantener SessionAuthentication para Django Admin
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    
+    # Permisos por defecto (se puede sobrescribir por view)
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+        # IsAuthenticatedOrReadOnly = Leer = todos, Escribir = autenticado
+    ],
+    
+    # Filtros disponibles globalmente
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    
+    # Paginación (lo vemos después)
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),   # Token de acceso expira en 1h
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),      # Token de refresco expira en 7 días
+    
+    'ROTATE_REFRESH_TOKENS': True,   # Genera nuevo refresh token al refrescar
+    'BLACKLIST_AFTER_ROTATION': True, # Invalida el refresh token viejo (requiere blacklist app)
+    
+    'ALGORITHM': 'HS256',  # Algoritmo de firma
+    'SIGNING_KEY': SECRET_KEY,  # Usa el SECRET_KEY de Django
+    
+    'AUTH_HEADER_TYPES': ('Bearer',),  # Formato: Authorization: Bearer <token>
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    
+    # Claims del token (info dentro del JWT)
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+}

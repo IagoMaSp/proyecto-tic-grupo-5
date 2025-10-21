@@ -50,18 +50,23 @@ class Profile(models.Model):
 
 class Wishlist(models.Model):    
     # Relation: User --- 1 --- n --- Wishlist
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wishlists', null=False, blank=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wishlist', null=False, blank=False)
     
     # Relation: University --- n --- m --- Wishlist
-    universities = models.ManyToManyField(University, related_name='wishlists', blank=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['user'], name='unique_user_university_wishlist')
-        ]
+    universities = models.ManyToManyField(University, related_name='wishlisted_by', blank=True)
 
     def __str__(self):
         return f'Wishlist de {self.user.username}'
+    
+    def toggle_university(self, university):
+        """Agrega o quita una universidad de la wishlist"""
+        if university in self.universities.all():
+            self.universities.remove(university)
+            return False  # Removido
+        else:
+            self.universities.add(university)
+            return True  # Agregado
+
 
 
 class Review(models.Model):
