@@ -51,17 +51,15 @@ class Profile(models.Model):
 class Wishlist(models.Model):    
     # Relation: User --- 1 --- n --- Wishlist
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wishlists', null=False, blank=False)
-    
-    # Relation: University --- n --- m --- Wishlist
-    universities = models.ManyToManyField(University, related_name='wishlists', blank=True)
+    university = models.ForeignKey(University, on_delete=models.CASCADE, related_name='wishlisted_by', null=False, blank=False)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['user'], name='unique_user_university_wishlist')
+            models.UniqueConstraint(fields=['user', 'university'], name='unique_user_university')
         ]
 
     def __str__(self):
-        return f'Wishlist de {self.user.username}'
+        return f'Wishlist {self.user.username} - {self.university.name}'
 
 
 class Review(models.Model):
