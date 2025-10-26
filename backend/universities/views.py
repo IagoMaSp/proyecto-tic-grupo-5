@@ -5,13 +5,14 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 
-from django.contrib.auth.models import User #
-from .models import University, Review, Profile
+from django.contrib.auth.models import User
+from .models import University, Review, Profile, Wishlist
 from .serializers import (
     UniversitySerializer, 
     ReviewSerializer, 
     ProfileSerializer,
-    RegisterSerializer 
+    RegisterSerializer,
+    WishlistSerializer
 ) 
 from .filters import UniversityFilter
 from rest_framework.exceptions import PermissionDenied
@@ -112,3 +113,35 @@ class ProfileViewSet(viewsets.ModelViewSet):
     # Desactivar la creación a través del ViewSet (el registro maneja la creación)
     def create(self, request, *args, **kwargs):
         return Response({"detail": "La creación de perfiles se realiza a través del endpoint de registro (/api/register/)."}, status=403)
+
+class WishlistViewSet(viewsets.ModelViewSet):
+    serializer_class = WishlistSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        # returnear wishlist por usuario
+        return Wishlist.objects.filter(user=self.request.user)
+    def perform_create(self, serializer):
+        # Asigna el usuario autenticado al crear un wishlist
+        serializer.save(user=self.request.user)
+    
+    @action(detail=False, methods=['post'])
+    def add(self, request):
+        university_id=request.data.get('university')
+        if not university_id:
+            return Response({"error":"Falta id de la unviersidad"},status=400)
+        wishlist, created=Wishlist.objects.get_or_create(user=request.user,university_id=university_id)
+        if not created:
+            return Response({"error":"La universidad ya está en la wishlist"},status=400)
+        return Response({'message':'Universidad añadida a la wishlist'})
+    
+    @action(detail=False, methods=['post'])
+    def remove(self, request):
+        unviersity_id=request.data.get('university')
+        if not unviersity_id:
+            return Response({"error":"Falta id de la unviersidad"},status=400)
+        wishlist=Wishlist.objects.filter(user=request.user,university_id=unviersity_id).first()
+        if not wishlist:
+            return Response({"error":"La universidad no está en la wishlist"},status=400)
+        wishlist.delete()
+        return Response({'message':'Universidad eliminada de la wishlist'})
+

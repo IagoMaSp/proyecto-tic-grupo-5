@@ -41,6 +41,7 @@ INSTALLED_APPS = [ # una app es un “módulo” dentro del proyecto donde viven
     'django_filters', # filtros DRF
     'corsheaders', # CORS
     'universities',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -138,3 +139,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # URL para acceder a los archivos subidos
 MEDIA_URL = '/media/'
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',    
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}

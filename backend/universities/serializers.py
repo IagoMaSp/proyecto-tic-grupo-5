@@ -58,3 +58,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         #    el Profile se crea automáticamente, no se necesita crearlo aquí.
         
         return user
+
+class WishlistSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Wishlist
+        fields=['id','user','university']
+        read_only_fields = ['user']
