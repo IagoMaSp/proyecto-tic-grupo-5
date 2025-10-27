@@ -18,7 +18,7 @@ services:
     environment:
       # Django
       DJANGO_DEBUG: "1"
-      DJANGO_SECRET_KEY: "dev-secret-key"
+      DJANGO_SECRET_KEY: "'django-insecure-^$bzd4w^dw$zuo0f-$9x14b18_5yy--r!sio*)-)955bjt=g@z'"
       # DB (Django leerá esto)
       POSTGRES_DB: portaldb
       POSTGRES_USER: portaluser
