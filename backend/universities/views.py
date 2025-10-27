@@ -1,118 +1,295 @@
-from django.shortcuts import render
+"""
+Vistas (Views) de Django Rest Framework para la API.
+
+Define los endpoints para la autenticación (Registro, Perfil)
+y los ViewSets para los modelos principales (University, Review, Profile).
+"""
+
+# --- Importaciones ---
+
+# 1. Importaciones de Django
+from django.contrib.auth.models import User
 from django.db.models import Avg, F, ExpressionWrapper, FloatField, Count
-from rest_framework import viewsets, filters, generics, permissions
-from rest_framework.response import Response
+
+# 2. Importaciones de Terceros (DRF, Django-Filters)
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import viewsets, filters, generics, permissions, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
 
 from django.contrib.auth.models import User
 from .models import University, Review, Profile, Wishlist
 from .serializers import (
-    UniversitySerializer, 
-    ReviewSerializer, 
+    UniversitySerializer,
+    ReviewSerializer,
     ProfileSerializer,
     RegisterSerializer,
     WishlistSerializer
 ) 
 from .filters import UniversityFilter
-from rest_framework.exceptions import PermissionDenied
 
+# --- Vistas de Autenticación y Perfil (Endpoints Específicos) ---
 
-# Vista de Registro (Sign Up) - POST /api/register/
 class RegisterView(generics.CreateAPIView):
+    """
+    Endpoint: POST /api/register/
+    Permite el registro (creación) de nuevos usuarios.
+    Accesible por cualquier usuario (AllowAny).
+    """
     queryset = User.objects.all()
-    # Permitir a cualquiera acceder a esta vista para poder registrarse
-    permission_classes = (permissions.AllowAny,) 
+    permission_classes = (permissions.AllowAny,)
     serializer_class = RegisterSerializer
 
-# Vista para ver y actualizar el perfil del usuario autenticado - GET/PUT /api/profile/
+
 class ProfileView(generics.RetrieveUpdateAPIView):
-    # Solo usuarios autenticados (con Token JWT válido) pueden acceder
-    permission_classes = (permissions.IsAuthenticated,) 
+    """
+    Endpoint: GET /api/profile/, PUT /api/profile/, PATCH /api/profile/
+    Permite a un usuario autenticado ver y actualizar su propio perfil.
+    """
+    permission_classes = (permissions.IsAuthenticated,)
     serializer_class = ProfileSerializer
 
-    # Asegura que solo se pueda acceder al perfil del usuario logueado
     def get_object(self):
-        # Devuelve el objeto Profile relacionado al usuario actual de la petición
+        """Asegura que solo se devuelva el perfil del usuario logueado."""
         try:
+            # Devuelve el objeto Profile relacionado al usuario actual
             return Profile.objects.get(user=self.request.user)
         except Profile.DoesNotExist:
             raise PermissionDenied("El perfil no existe para el usuario autenticado.")
 
 
+# --- Vistas de Modelos (ViewSets) ---
+
 class UniversityViewSet(viewsets.ModelViewSet):
-    queryset = University.objects.all()
+    """
+    Endpoint: /api/universities/
+    Permite operaciones CRUD sobre el modelo University.
+    Incluye anotaciones para conteo de reviews y ratings promedio.
+    """
     serializer_class = UniversitySerializer
 
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter] 
+    # Configuración de Filtros y Ordenación
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = UniversityFilter
+    ordering_fields = [
+        'qs_rating_top',
+        'visits_count',
+        'overall_avg_rating',
+        'review_count'
+    ]
+    ordering = ['qs_rating_top']  # Orden por defecto
 
-    ordering_fields = ['qs_rating_top', 'visits_count', 'overall_avg_rating', 'reviews_count'] 
-    ordering = ['qs_rating_top'] 
-    
     def get_queryset(self):
-        queryset = super().get_queryset()
+        """
+        Sobrescribe el queryset base para incluir anotaciones y prefetching.
+        - prefetch_related: Optimiza la carga de relaciones (reviews, fotos).
+        - annotate (review_count): Cuenta las reviews.
+        - annotate (ratings): Calcula los promedios de ratings.
+        - annotate (overall_avg_rating): Calcula el promedio general.
+        """
+        queryset = University.objects.all()
 
-        # CÁLCULO DE PROMEDIOS (ANOTACIÓN)
+        # Optimización de base de datos
+        queryset = queryset.prefetch_related(
+            'photos',
+            'reviews',
+            'reviews__user',
+            'reviews__user__profile'
+        )
+
+        # Anotaciones
         queryset = queryset.annotate(
-            reviews_count = Count('reviews'),
-            avg_social=Avg('review__social_rating'),
-            avg_academic=Avg('review__academic_rating'),
-            avg_place=Avg('review__place_rating')
+            review_count=Count('reviews'),
+            avg_social=Avg('reviews__social_rating'),
+            avg_academic=Avg('reviews__academic_rating'),
+            avg_place=Avg('reviews__place_rating')
         ).annotate(
+            # Calcula el promedio general usando F() para campos anotados
             overall_avg_rating=ExpressionWrapper(
                 (F('avg_social') + F('avg_academic') + F('avg_place')) / 3.0,
                 output_field=FloatField()
             )
         )
-        
+
         return queryset
-    
+
     def retrieve(self, request, *args, **kwargs):
-        # Incremento del contador de visitas (visits_count)
+        """
+        Sobrescribe 'retrieve' para incrementar el contador de visitas
+        cada vez que se consulta el detalle de una universidad.
+        """
         instance = self.get_object()
-        instance.visits_count += 1 
-        instance.save()
         
+        # CORRECCIÓN: Usar F() para una actualización atómica (thread-safe)
+        # y evitar condiciones de carrera (race conditions).
+        instance.visits_count = F('visits_count') + 1
+        instance.save(update_fields=['visits_count'])
+        
+        # Refrescar la instancia para que el serializer obtenga el valor actualizado
+        instance.refresh_from_db()
+
         return super().retrieve(request, *args, **kwargs)
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], url_path='top-reviews')
     def top_reviews(self, request):
-        query_set = self.get_queryset()
+        """
+        Endpoint: GET /api/universities/top-reviews/
+        Retorna las universidades con más reviews, con filtros opcionales.
+        
+        Query params:
+        - limit (int): Cantidad (default: 10, max: 50).
+        - continent (str): Filtrar por continente.
+        - country (str): Filtrar por país (case-insensitive).
+        - min_rating (float): Filtrar por rating promedio mínimo.
+        """
+        queryset = self.get_queryset()
 
-        top_universities = query_set.order_by('-reviews_count')[:10]
+        # 1. Aplicar filtros opcionales
+        continent = request.query_params.get('continent')
+        if continent:
+            queryset = queryset.filter(continent=continent)
 
-        serializer = self.get_serializer(top_universities, many=True)  
-        return Response(serializer.data)
+        country = request.query_params.get('country')
+        if country:
+            queryset = queryset.filter(country__icontains=country)
+
+        min_rating = request.query_params.get('min_rating')
+        if min_rating:
+            try:
+                min_rating = float(min_rating)
+                queryset = queryset.filter(overall_avg_rating__gte=min_rating)
+            except (ValueError, TypeError):
+                return Response(
+                    {'error': 'min_rating debe ser un número válido.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # 2. Parsear límite (preservando la lógica original)
+        limit = 10  # Default
+        limit_param = request.query_params.get('limit', '10')
+        try:
+            limit = int(limit_param)
+            if limit > 50:
+                limit = 50
+            if limit < 1:
+                # Se preserva la lógica original: si es < 1, usa 10.
+                limit = 10
+        except ValueError:
+            limit = 10  # Default si no es un número
+
+        # 3. Filtrar y Ordenar
+        queryset = queryset.filter(review_count__gt=0)
+        top_universities = queryset.order_by('-review_count')[:limit]
+
+        # 4. Serializar y retornar
+        serializer = self.get_serializer(top_universities, many=True)
+
+        return Response({
+            'count': len(top_universities),
+            'results': serializer.data
+        })
+
+    @action(detail=False, methods=['get'], url_path='top-rated')
+    def top_rated(self, request):
+        """
+        Endpoint: GET /api/universities/top-rated/
+        Retorna las universidades con mejor rating promedio (mín 3 reviews).
+        """
+        queryset = self.get_queryset()
+
+        # CORRECCIÓN: Parseo de 'limit' robusto (anti-ValueError)
+        limit = 10  # Default
+        limit_param = request.query_params.get('limit', '10')
+        try:
+            limit = int(limit_param)
+            if limit > 50:
+                limit = 50
+            if limit < 1:
+                limit = 1  # Límite mínimo 1
+        except ValueError:
+            limit = 10  # Default en caso de error
+
+        # Filtrar por confiabilidad (al menos 3 reviews) y ordenar
+        queryset = queryset.filter(review_count__gte=3)
+        top_universities = queryset.order_by('-overall_avg_rating')[:limit]
+
+        serializer = self.get_serializer(top_universities, many=True)
+
+        return Response({
+            'count': len(top_universities),
+            'results': serializer.data
+        })
+
+    @action(detail=False, methods=['get'], url_path='most-visited')
+    def most_visited(self, request):
+        """
+        Endpoint: GET /api/universities/most-visited/
+        Retorna las universidades más visitadas en el sitio.
+        """
+        queryset = self.get_queryset()
+
+        # CORRECCIÓN: Parseo de 'limit' robusto (anti-ValueError)
+        limit = 10  # Default
+        limit_param = request.query_params.get('limit', '10')
+        try:
+            limit = int(limit_param)
+            if limit > 50:
+                limit = 50
+            if limit < 1:
+                limit = 1  # Límite mínimo 1
+        except ValueError:
+            limit = 10  # Default en caso de error
+
+        most_visited = queryset.order_by('-visits_count')[:limit]
+
+        serializer = self.get_serializer(most_visited, many=True)
+
+        return Response({
+            'count': len(most_visited),
+            'results': serializer.data
+        })
+
+
 class ReviewViewSet(viewsets.ModelViewSet):
-    # Solo usuarios autenticados pueden crear/modificar reseñas
+    """
+    Endpoint: /api/reviews/
+    Permite CRUD sobre Reviews. Asigna automáticamente el usuario
+    autenticado al crear una nueva review (perform_create).
+    """
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
 
-    # Sobrescribir perform_create para asignar el usuario automáticamente
     def perform_create(self, serializer):
-        # Antes de guardar, asigna el usuario autenticado al campo 'user' de la reseña
+        """Asigna el usuario de la petición al crear la review."""
         serializer.save(user=self.request.user)
-    
+
 
 class ProfileViewSet(viewsets.ModelViewSet):
-    # Limitar el acceso a solo lectura para listar perfiles
+    """
+    Endpoint: /api/profiles/
+    Permite a los usuarios ver (GET) su propio perfil.
+    Deshabilita la creación (POST), que se maneja en /api/register/.
+    """
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
-    
-    # Sobrescribir queryset para que los usuarios normales solo vean su propio perfil
-    # Si dejas la lista abierta, la gente podrá ver todas las fotos de perfil.
-    def get_queryset(self):
-        if self.request.user.is_authenticated:
-            # Los usuarios solo ven su propio perfil
-            return Profile.objects.filter(user=self.request.user)
-        return Profile.objects.none() # Anónimo no ve nada
 
-    # Desactivar la creación a través del ViewSet (el registro maneja la creación)
+    def get_queryset(self):
+        """
+        Filtra el queryset para que los usuarios autenticados
+        solo vean su propio perfil. Los anónimos no ven ninguno.
+        """
+        if self.request.user.is_authenticated:
+            return Profile.objects.filter(user=self.request.user)
+        return Profile.objects.none()
+
     def create(self, request, *args, **kwargs):
-        return Response({"detail": "La creación de perfiles se realiza a través del endpoint de registro (/api/register/)."}, status=403)
+               """Deshabilita la creación de perfiles vía este endpoint."""
+        return Response(
+            {"detail": "La creación de perfiles se realiza a través del endpoint de registro (/api/register/)."},
+            status=status.HTTP_403_FORBIDDEN
+        )
 
 class WishlistViewSet(viewsets.ModelViewSet):
     serializer_class = WishlistSerializer

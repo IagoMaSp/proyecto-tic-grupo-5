@@ -1,30 +1,58 @@
+"""
+Definición de Filtros (django-filters) para la API.
+
+Provee la clase UniversityFilter para filtrar el ViewSet de University
+basado en parámetros de la URL.
+"""
+
+# --- Importaciones ---
+
+# 1. Importaciones de terceros (django-filters)
 import django_filters
-from .models import University 
+
+# 2. Importaciones locales
+from .models import University
+
+
+# --- Definiciones de Filtros ---
 
 class UniversityFilter(django_filters.FilterSet):
-    # Filtro de Búsqueda por Nombre (icontains = contiene, case-insensitive)
+    """
+    Filtro personalizado para el modelo University.
+    
+    Permite filtrar por nombre, país, continente y por rangos
+    mínimos de ratings (QS, general y específicos).
+    """
+    
+    # --- Filtros de Texto ---
+    
+    # Búsqueda por Nombre (case-insensitive)
     name = django_filters.CharFilter(lookup_expr='icontains')
     
-    # Filtro por País (exact = igualdad)
+    # Búsqueda por País (coincidencia exacta)
     country = django_filters.CharFilter(lookup_expr='exact')
     
-    # Filtro por Continente (icontains)
-    # Asumo que 'continent' es un campo de texto en tu modelo University
+    # Búsqueda por Continente (case-insensitive)
     continent = django_filters.CharFilter(lookup_expr='icontains')
 
-    # Filtro de Ranking QS (min_qs)
-    # Busca universidades cuyo qs_rating_bottom sea mayor o igual al valor enviado 
-    # (es decir, un mejor ranking).
-    min_qs = django_filters.NumberFilter(field_name='qs_rating_bottom', lookup_expr='gte') 
+    # --- Filtros Numéricos (Ratings) ---
+    
+    # Filtro de Ranking QS (mínimo)
+    # Busca 'qs_rating_bottom' >= valor (mejor ranking)
+    min_qs = django_filters.NumberFilter(
+        field_name='qs_rating_bottom',
+        lookup_expr='gte'  # Greater Than or Equal
+    ) 
 
-    # Filtros para el Promedio General de Notas (Overall Average Rating)
-    # Permite al usuario buscar universidades con un promedio general MÍNIMO.
+    # Filtro de Promedio General (mínimo)
+    # Nota: 'overall_avg_rating' es un campo anotado en el ViewSet
     min_overall_rating = django_filters.NumberFilter(
         field_name='overall_avg_rating', 
-        lookup_expr='gte' # Mayor o igual que (Greater Than or Equal)
+        lookup_expr='gte'
     )
 
-    # Filtros para notas individuales (Mínimo requerido)
+    # Filtros para notas individuales (mínimo)
+    # Nota: Estos campos (avg_social, etc.) son anotados en el ViewSet
     min_social_rating = django_filters.NumberFilter(
         field_name='avg_social', 
         lookup_expr='gte'
@@ -38,7 +66,18 @@ class UniversityFilter(django_filters.FilterSet):
         lookup_expr='gte'
     )
 
-
     class Meta:
+        """Configuración interna del FilterSet."""
         model = University
-        fields = ['name', 'country', 'continent', 'min_qs', 'min_overall_rating', 'min_social_rating', 'min_academic_rating', 'min_place_rating']
+        
+        # REFACTOR: Lista de campos formateada para legibilidad
+        fields = [
+            'name',
+            'country',
+            'continent',
+            'min_qs',
+            'min_overall_rating',
+            'min_social_rating',
+            'min_academic_rating',
+            'min_place_rating'
+        ]
