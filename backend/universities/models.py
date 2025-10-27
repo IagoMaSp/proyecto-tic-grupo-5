@@ -207,7 +207,15 @@ class Review(models.Model):
     def __str__(self):
         return f'Review de {self.user.username} sobre {self.university.name}'
 
+    @property
+    def overall_rating(self):
+        return (self.social_rating + self.academic_rating + self.place_rating) / 3
+
     class Meta:
+        indexes = [
+            models.Index(fields=['user', 'university']),
+            models.Index(filelds=['-start_date']),]
+        
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'university'],

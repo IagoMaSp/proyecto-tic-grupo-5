@@ -193,3 +193,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         # inmediatamente después de que este 'create_user' se complete.
         
         return user
+
+class WishlistSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Wishlist
+        fields=['id','user','university']
+        read_only_fields = ['user']

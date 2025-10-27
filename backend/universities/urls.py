@@ -35,6 +35,7 @@ router = DefaultRouter()
 router.register(r'universities', UniversityViewSet, basename='university')
 router.register(r'profiles', ProfileViewSet, basename='profile')
 router.register(r'reviews', ReviewViewSet, basename='review')
+router.register(r'wishlists', ReviewViewSet, basename='wishlist')
 
 
 # --- Patrones de URL Principales ---

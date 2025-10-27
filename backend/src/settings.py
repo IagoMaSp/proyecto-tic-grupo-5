@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 
     # Apps locales
     'universities',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -136,6 +137,18 @@ MEDIA_URL = '/media/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# URL para acceder a los archivos subidos
+MEDIA_URL = '/media/'
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',    
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 # --- Configuración de Aplicaciones de Terceros ---
 
 # 1. Configuración de CORS (Cross-Origin Resource Sharing)
