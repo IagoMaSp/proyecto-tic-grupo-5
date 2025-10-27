@@ -12,6 +12,7 @@ from django.db import models
 from django.db.models import Avg, F, Q  # CORRECCIÓN: Importaciones necesarias
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 # --- Constantes del Módulo ---
 
@@ -214,7 +215,7 @@ class Review(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=['user', 'university']),
-            models.Index(filelds=['-start_date']),]
+            models.Index(fields=['-start_date']),]
         
         constraints = [
             models.UniqueConstraint(

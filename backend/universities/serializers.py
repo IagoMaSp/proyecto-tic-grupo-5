@@ -14,7 +14,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 
 # 3. Importaciones locales (Modelos de esta aplicación)
-from .models import University, Profile, Review
+from .models import University, Profile, Review, Wishlist
 
 # --- Constantes del Módulo ---
 
