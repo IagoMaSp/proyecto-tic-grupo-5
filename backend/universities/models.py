@@ -76,7 +76,15 @@ class Review(models.Model):
     # Relation: University --- 1 --- n --- Review
     university = models.ForeignKey(University, on_delete=models.CASCADE, related_name='reviews', null=False, blank=False)
 
+    @property
+    def overall_rating(self):
+        return (self.social_rating + self.academic_rating + self.place_rating) / 3
+
     class Meta:
+        indexes = [
+            models.Index(fields=['user', 'university']),
+            models.Index(filelds=['-start_date']),]
+        
         constraints = [
             models.UniqueConstraint(
             fields=['user', 'university'],
