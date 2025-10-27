@@ -285,7 +285,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
         return Profile.objects.none()
 
     def create(self, request, *args, **kwargs):
-               """Deshabilita la creación de perfiles vía este endpoint."""
+        """Deshabilita la creación de perfiles vía este endpoint."""
         return Response(
             {"detail": "La creación de perfiles se realiza a través del endpoint de registro (/api/register/)."},
             status=status.HTTP_403_FORBIDDEN
