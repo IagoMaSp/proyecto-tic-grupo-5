@@ -1,32 +1,45 @@
 import pandas as pd
 import re
 from django.core.management.base import BaseCommand
-from django.db import transaction                                           #VER QUE ES ESTO
-# Asegúrate de importar tu modelo desde la ubicación correcta
-# from tu_app.models import University
-from models import University # Ajusta 'core' al nombre de tu app
+from django.db import transaction
+from universities.models import University
+from unidecode import unidecode
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("convenios_file", type=str, help="Path al archivo CSV de universidades con convenio")
         parser.add_argument("qs_rankings_file", type=str, help="Path al archivo CSV de QS rankings")
-    
+        
+        parser.add_argument(
+            '--clear',
+            action='store_true',
+            help='Elimina todas las universidades antes de cargar nuevas.',
+        )
 
-    def handle(*args, **options): #args es una tupla, options es un diccionario tipo: {'clear': True, 'verbose': False} los * son para despenpaquetar
+    def clean_name(self, name):
+        if not isinstance(name, str):
+            return ""
+        cleaned = unidecode(name).lower().strip()
+        return cleaned
+
+    def handle(self, *args, **options): #args es una tupla, options es un diccionario tipo: {'clear': True, 'verbose': False} los * son para despenpaquetar
         if options['clear']:
             self.stdout.write(self.style.WARNING('Eliminando universidades existentes...'))
             University.objects.all().delete()
         
-        convenios_path = options['convenios_csv']
-        qs_rankings_path = options['qs_rankings_csv']
+        convenios_path = options['convenios_file']
+        qs_rankings_path = options['qs_rankings_file']
         
         try:
-            df.read_csv(convenios_path)
-            self.stdout.write(self.style.SUCCESS('\n Universidades con convenio cargadas exitosamente.'))
-            
-            self.load_qs_rankings(qs_rankings_path) 
-            self.stdout.write(self.style.SUCCESS('\n QS Ranking e información de universidades cargadas exitosamente.'))
+            df_convenios = pd.read_csv(convenios_path, encoding='latin-1')
+            self.stdout.write(self.style.SUCCESS('Universidades con convenio cargadas exitosamente.'))
+        
+            df_qs = pd.read_csv(qs_rankings_path, encoding='latin-1') 
+            self.stdout.write(self.style.SUCCESS('QS Ranking e información de universidades cargadas exitosamente.'))
 
+            df_convenios['clean_name_match'] = df_convenios['name'].apply(self.clean_name)
+            df_qs['clean_name_match'] = df_qs['Institution_Name'].apply(self.clean_name)
+            
             df_qs = df_qs.rename(columns={
                 'Institution_Name': 'name',
                 'Region': 'continent_qs',
@@ -35,14 +48,15 @@ class Command(BaseCommand):
             })
             df_convenios = df_convenios.rename(columns={
                 'nombre': 'name',
-                'url': 'web_pages'
+                'web_page': 'web_pages'
             })
 
-            df_convenios['name'] = dp_convenios['name'].str.strip()
+            df_convenios['name'] = df_convenios['name'].str.strip()
             df_qs['name'] = df_qs['name'].str.strip()
 
-            df_merged = pd.merge(df_convenios, df_qs[['name','RANK_2025','continent_qs', 'status_qs']], on='name', how='left')
+            df_merged = pd.merge(df_convenios, df_qs[['clean_name_match','RANK_2025','continent_qs', 'status_qs']], on='clean_name_match', how='left')
 
+            df_merged = df_merged.drop(columns=['clean_name_match'])
             self.stdout.write(self.style.SUCCESS(f'\n Comenzando la carga de {len(df_merged)} universidades mergeadas...'))
 
             universities_created = 0
@@ -69,6 +83,10 @@ class Command(BaseCommand):
                         continue
                     
                     status=row['status_qs'] if pd.notna(row['status_qs']) else 'Unknown'
+                    
+                    if 'country' not in row:
+                         self.stdout.write(self.style.ERROR(f"Error: La columna 'country' no se encontró en la fila para {row['name']}."))
+                         continue
 
                     obj,created = University.objects.update_or_create(
                         name=row['name'],
@@ -121,8 +139,3 @@ class Command(BaseCommand):
             'Africa': 'Africa'
         }
         return mapping.get(continent_qs, 'Not Classified')
-
-
-
-
-
