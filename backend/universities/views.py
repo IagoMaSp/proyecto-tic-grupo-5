@@ -95,10 +95,10 @@ class UniversityViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """
         Sobrescribe el queryset base para incluir anotaciones y prefetching.
-        
-        NOTA: El cálculo 'overall_avg_rating' se replica aquí (en lugar de
-        usar la @property del modelo) para permitir que la base de datos
-        ordene y filtre por este valor calculado.
+        - prefetch_related: Optimiza la carga de relaciones (reviews, fotos).
+        - annotate (review_count): Cuenta las reviews.
+        - annotate (ratings): Calcula los promedios de ratings.
+        - annotate (overall_avg_rating): Calcula el promedio general.
         """
         queryset = University.objects.all()
 
@@ -110,113 +110,26 @@ class UniversityViewSet(viewsets.ModelViewSet):
             'reviews__user__profile'
         )
 
-        # Anotación de conteo y promedios brutos
+        # Define los promedios con Coalesce para evitar Nones
+        avg_social = Coalesce(Avg('reviews__social_rating'), 0.0)
+        avg_academic = Coalesce(Avg('reviews__academic_rating'), 0.0)
+        avg_place = Coalesce(Avg('reviews__place_rating'), 0.0)
+
+        # Anotaciones
         queryset = queryset.annotate(
             review_count=Count('reviews'),
-            avg_social_raw=Avg('reviews__social_rating'),
-            avg_academic_raw=Avg('reviews__academic_rating'),
-            avg_place_raw=Avg('reviews__place_rating')
-        )
-
-        # Cálculo del numerador (suma de promedios, ignorando nulos)
-        numerator = ExpressionWrapper(
-            Coalesce(F('avg_social_raw'), 0.0) +
-            Coalesce(F('avg_academic_raw'), 0.0) +
-            Coalesce(F('avg_place_raw'), 0.0),
-            output_field=FloatField()
-        )
-
-        # Cálculo del denominador (conteo de promedios no nulos)
-        denominator = ExpressionWrapper(
-            Case(When(avg_social_raw__isnull=False, then=1), default=0) +
-            Case(When(avg_academic_raw__isnull=False, then=1), default=0) +
-            Case(When(avg_place_raw__isnull=False, then=1), default=0),
-            output_field=FloatField()
-        )
-
-        # Cálculo del promedio final, manejando la división por cero
-        queryset = queryset.annotate(
-            # Guardamos los valores Coalesce para el serializer
-            avg_social=Coalesce(F('avg_social_raw'), 0.0),
-            avg_academic=Coalesce(F('avg_academic_raw'), 0.0),
-            avg_place=Coalesce(F('avg_place_raw'), 0.0),
-
-            # Hacemos la división final
-            overall_avg_rating=Case(
-                # Si el denominador es 0 (sin reviews), el promedio es None
-                When(denominator=0, then=None),
-                # Si no, calculamos (Numerador / Denominador)
-                default=(numerator / denominator),
+            avg_social=avg_social,
+            avg_academic=avg_academic,
+            avg_place=avg_place
+        ).annotate(
+            # Calcula el promedio general usando F() para campos anotados
+            overall_avg_rating=ExpressionWrapper(
+                (F('avg_social') + F('avg_academic') + F('avg_place')) / 3.0,
                 output_field=FloatField()
             )
         )
 
         return queryset
-
-    def retrieve(self, request, *args, **kwargs):
-        """
-        Sobrescribe 'retrieve' para incrementar el contador de visitas
-        cada vez que se consulta el detalle de una universidad.
-        """
-        instance = self.get_object()
-        
-        # Usar F() para una actualización atómica (thread-safe)
-        instance.visits_count = F('visits_count') + 1
-        instance.save(update_fields=['visits_count'])
-        
-        # Refrescar la instancia para que el serializer obtenga el valor actualizado
-        instance.refresh_from_db()
-
-        return super().retrieve(request, *args, **kwargs)
-
-    @action(detail=False, methods=['get'], url_path='top-reviews')
-    def top_reviews(self, request):
-        """
-        Endpoint: GET /api/universities/top-reviews/
-        Retorna las universidades con más reviews, con filtros opcionales.
-        Utiliza la paginación estándar de DRF (ej: ?page=1&page_size=10).
-        
-        Query params:
-        - continent (str): Filtrar por continente.
-        - country (str): Filtrar por país (case-insensitive).
-        - min_rating (float): Filtrar por rating promedio mínimo.
-        """
-        queryset = self.get_queryset()
-
-        # 1. Aplicar filtros opcionales
-        continent = request.query_params.get('continent')
-        if continent:
-            queryset = queryset.filter(continent=continent)
-
-        country = request.query_params.get('country')
-        if country:
-            queryset = queryset.filter(country__icontains=country)
-
-        min_rating = request.query_params.get('min_rating')
-        if min_rating:
-            try:
-                min_rating = float(min_rating)
-                queryset = queryset.filter(overall_avg_rating__gte=min_rating)
-            except (ValueError, TypeError):
-                return Response(
-                    {'error': 'min_rating debe ser un número válido.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-        # 2. Aplicar la lógica de la acción (orden y filtro base)
-        queryset = queryset.filter(review_count__gt=0).order_by('-review_count')
-
-        # 3. Paginar el queryset resultante
-        page = self.paginate_queryset(queryset)
-        
-        # 4. Devolver respuesta paginada
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        # 5. Si no hay paginación, devolver todo
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='top-rated')
     def top_rated(self, request):

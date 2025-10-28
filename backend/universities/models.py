@@ -71,7 +71,7 @@ class University(models.Model):
 
         if valid_ratings:
             # Calcula el promedio solo de las calificaciones válidas
-            return sum(valid_ratings) / len(valid_ratings)
+            return sum(valid_ratings) / 3
         
         # Retorna None si no hay calificaciones válidas
         return None
