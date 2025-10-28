@@ -9,7 +9,7 @@ adherencia a las mejores prácticas de Django.
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
-from django.db.models import Avg, F, Q  # CORRECCIÓN: Importaciones necesarias
+from django.db.models import Avg, F, Q
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -55,7 +55,7 @@ class University(models.Model):
         de todas las revisiones asociadas, ignorando los valores nulos.
         
         CORRECCIÓN:
-        - Se utiliza `Avg` de django.db.models (antes 'avg' no estaba definido).
+        - Se utiliza `Avg` de django.db.models.
         - Lógica de cálculo simplificada y corregida para mayor legibilidad.
         """
         avg_ratings = self.reviews.aggregate(
@@ -83,6 +83,7 @@ class University(models.Model):
         verbose_name = "Universidad"
         verbose_name_plural = "Universidades"
         constraints = [
+            # Asegura que el rango de rating sea lógico
             models.CheckConstraint(
                 check=Q(qs_rating_bottom__gte=F('qs_rating_top')),
                 name="qs_rating_bottom_gte_qs_rating_top"
@@ -122,7 +123,7 @@ class Profile(models.Model):
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
-        related_name='profile'  # SUGERENCIA: Añadir related_name explícito
+        related_name='profile' 
     )
     
     profile_photo = models.ImageField(upload_to='profile_photos/', blank=True, null=True)
@@ -149,22 +150,27 @@ class Wishlist(models.Model):
         blank=False
     )
     
-    universities = models.ManyToManyField(
+    university = models.ForeignKey( 
         University,
+        on_delete=models.CASCADE,
         related_name='wishlisted_by',
-        blank=True
+        null=False,
+        blank=False
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'Wishlist de {self.user.username} ({self.universities.count()} universidades)'
+        # Defensa contra errores en admin si falta un usuario o universidad
+        try:
+            return f'Wishlist de {self.user.username}: {self.university.name}'
+        except (User.DoesNotExist, University.DoesNotExist):
+            return f'Entrada de Wishlist (ID: {self.id})'
     
     class Meta:
         verbose_name = 'Lista de deseos'
         verbose_name_plural = 'Listas de deseos'
-    
 
 
 class Review(models.Model):
@@ -174,6 +180,7 @@ class Review(models.Model):
     start_date = models.DateField(null=False, blank=False)
     end_date = models.DateField(null=False, blank=False)
     
+    # Calificaciones con validadores de rango
     social_rating = models.FloatField(
         validators=[MinValueValidator(0), MaxValueValidator(5)],
         null=False,
@@ -190,6 +197,7 @@ class Review(models.Model):
         blank=False
     )
     
+    # Relaciones
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -210,18 +218,22 @@ class Review(models.Model):
 
     @property
     def overall_rating(self):
+        """Promedio simple de las tres calificaciones de esta revisión."""
         return (self.social_rating + self.academic_rating + self.place_rating) / 3
 
     class Meta:
         indexes = [
             models.Index(fields=['user', 'university']),
-            models.Index(fields=['-start_date']),]
+            models.Index(fields=['-start_date']),
+        ]
         
         constraints = [
+            # Un usuario solo puede escribir una review por universidad
             models.UniqueConstraint(
                 fields=['user', 'university'],
                 name='unique_user_university_review'
             ),
+            # La fecha de fin debe ser posterior a la de inicio
             models.CheckConstraint(
                 check=Q(end_date__gt=F('start_date')),
                 name="review_end_after_start"
@@ -238,7 +250,6 @@ def create_user_profile(sender, instance, created, **kwargs):
     """Crea un objeto Profile automáticamente cuando se crea un nuevo User."""
     if created:
         Profile.objects.create(user=instance)
-
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
