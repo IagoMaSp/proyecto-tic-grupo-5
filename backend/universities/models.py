@@ -38,7 +38,7 @@ class University(models.Model):
     
     continent = models.CharField(
         max_length=50,
-        choices=CONTINENT_CHOICES,  # REFACTOR: Uso de constante de módulo
+        choices=CONTINENT_CHOICES,
         null=False,
         blank=False
     )

@@ -9,12 +9,12 @@ y los ViewSets para los modelos principales (University, Review, Wishlist).
 
 # 1. Importaciones de Django
 from django.contrib.auth.models import User
-from django.db.models import Avg, F, ExpressionWrapper, FloatField, Count, Case, When, Q
+from django.db.models import Avg, F, ExpressionWrapper, FloatField, Count
 from django.db.models.functions import Coalesce
 
 # 2. Importaciones de Terceros (DRF, Django-Filters)
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, filters, generics, permissions, status
+from rest_framework import viewsets, filters, generics, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
