@@ -4,6 +4,13 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver 
 
+
+class Faculty(models.Model):
+    name = models.CharField(max_length=16, null=False, blank=False, unique=True)
+
+    def __str__(self):
+        return self.name
+
 class University(models.Model):
     name = models.CharField(max_length=255, null=False, blank=False, unique=True)
     country = models.CharField(max_length=255, null=False, blank=False)
@@ -13,8 +20,7 @@ class University(models.Model):
     status = models.CharField(max_length=255, null=False, blank=False)
     continent_choices = [('Africa', 'África'),("America", "América"),("Asia", "Asia"),("Europe", "Europa"),("Oceania", "Oceania"),]
     continent = models.CharField(max_length=50, choices=continent_choices, null=False, blank=False)
-    faculties=models.ManyToManyField('faculties.Faculty', related_name='universities', blank=True)
-
+    faculties = models.ManyToManyField(Faculty, related_name="universities", blank=True, help_text="Facultades con las que esta universidad tiene convenio")
     visits_count = models.IntegerField(default=0, help_text="Número de veces que se ha visto la universidad")
 
     def __str__(self):
@@ -27,7 +33,7 @@ class University(models.Model):
                 name="qs_rating_bottom_gte_qs_rating_top"
             )
         ]
-    
+
 class PhotosUniversity(models.Model):
     # Relation: University --- 1 --- n --- PhotosUniversity
     university = models.ForeignKey(University, on_delete=models.CASCADE, related_name='photos', null=False, blank=False)

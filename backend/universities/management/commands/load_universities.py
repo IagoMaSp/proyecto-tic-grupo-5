@@ -2,7 +2,7 @@ import pandas as pd
 import re
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from universities.models import University
+from universities.models import University, Faculty
 from unidecode import unidecode
 from thefuzz import process
 
@@ -54,7 +54,6 @@ class Command(BaseCommand):
                 'Location': 'country_qs' # Lo guardamos por si acaso, pero usaremos el de convenios porque asi queda en español
             })
             df_convenios = df_convenios.rename(columns={
-                'nombre': 'name',
                 'web_page': 'web_pages'
             })
 
@@ -119,6 +118,18 @@ class Command(BaseCommand):
                             'continent': continent_mapped
                         })
                     
+
+                    obj.faculties.clear()
+                    if 'facultades_habilitadas' in row and pd.notna(row['facultades_habilitadas']):
+                        faculties_str = row['facultades_habilitadas']
+                        faculty_codes = faculties_str.split(';')
+
+                        for code in faculty_codes:
+                            code = code.strip()
+                            if code:
+                                faculty_obj, faculty_created = Faculty.objects.get_or_create(name=code)
+                                obj.faculties.add(faculty_obj)
+
                     if created:
                         universities_created += 1
                     else:
