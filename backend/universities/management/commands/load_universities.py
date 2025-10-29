@@ -4,8 +4,12 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from universities.models import University
 from unidecode import unidecode
+from thefuzz import process
 
 class Command(BaseCommand):
+    MATCH_THRESHOLD = 90
+    help = 'Carga universidades desde archivos CSV de convenios y QS rankings.'
+
     def add_arguments(self, parser):
         parser.add_argument("convenios_file", type=str, help="Path al archivo CSV de universidades con convenio")
         parser.add_argument("qs_rankings_file", type=str, help="Path al archivo CSV de QS rankings")
@@ -19,7 +23,10 @@ class Command(BaseCommand):
     def clean_name(self, name):
         if not isinstance(name, str):
             return ""
-        cleaned = unidecode(name).lower().strip()
+        cleaned = unidecode(name).lower()
+        cleaned = re.sub(r'[^\w\s]', '', cleaned)
+        cleaned = re.sub(r'\s+', ' ', cleaned)
+        cleaned = cleaned.strip()
         return cleaned
 
     def handle(self, *args, **options): #args es una tupla, options es un diccionario tipo: {'clear': True, 'verbose': False} los * son para despenpaquetar
@@ -31,14 +38,14 @@ class Command(BaseCommand):
         qs_rankings_path = options['qs_rankings_file']
         
         try:
-            df_convenios = pd.read_csv(convenios_path, encoding='latin-1')
+            df_convenios = pd.read_csv(convenios_path, encoding='utf-8')
             self.stdout.write(self.style.SUCCESS('Universidades con convenio cargadas exitosamente.'))
         
             df_qs = pd.read_csv(qs_rankings_path, encoding='latin-1') 
             self.stdout.write(self.style.SUCCESS('QS Ranking e información de universidades cargadas exitosamente.'))
 
-            df_convenios['clean_name_match'] = df_convenios['name'].apply(self.clean_name)
-            df_qs['clean_name_match'] = df_qs['Institution_Name'].apply(self.clean_name)
+            df_convenios['clean_name'] = df_convenios['name'].apply(self.clean_name)
+            df_qs['clean_name'] = df_qs['Institution_Name'].apply(self.clean_name)
             
             df_qs = df_qs.rename(columns={
                 'Institution_Name': 'name',
@@ -51,45 +58,58 @@ class Command(BaseCommand):
                 'web_page': 'web_pages'
             })
 
-            df_convenios['name'] = df_convenios['name'].str.strip()
-            df_qs['name'] = df_qs['name'].str.strip()
-
-            df_merged = pd.merge(df_convenios, df_qs[['clean_name_match','RANK_2025','continent_qs', 'status_qs']], on='clean_name_match', how='left')
-
-            df_merged = df_merged.drop(columns=['clean_name_match'])
-            self.stdout.write(self.style.SUCCESS(f'\n Comenzando la carga de {len(df_merged)} universidades mergeadas...'))
+            qs_choices = df_qs['clean_name'].tolist()
+            qs_lookup = df_qs.set_index('clean_name')
 
             universities_created = 0
             universities_updated = 0
             universities_skipped = 0
 
             with transaction.atomic():
-                for _, row in df_merged.iterrows():
-                    if pd.isna(row['RANK_2025']):
+                for _, row in df_convenios.iterrows():
+                    try:
+                        best_match, score = process.extractOne(row['clean_name'], qs_choices)
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f"Error en fuzzy matching para '{row['name']}': {e}"))
+                        continue
+                    if score < self.MATCH_THRESHOLD:
+                        self.stdout.write(self.style.WARNING(
+                            f"Universidad '{row['name']}' omitida. Mejor coincidencia '{best_match}' (Score: {score}%) no es suficiente."
+                        ))
+                        universities_skipped += 1
+                        continue
+                    
+                    qs_row = qs_lookup.loc[best_match].iloc[0] if isinstance(qs_lookup.loc[best_match], pd.DataFrame) else qs_lookup.loc[best_match]
+                    if pd.isna(qs_row['RANK_2025']):
                         self.stdout.write(self.style.WARNING(f"Universidad '{row['name']}' omitida por falta de QS ranking."))
                         universities_skipped += 1
                         continue
                     
-                    top, bottom = self.parse_qs_ranking(row['RANK_2025'])
+                    top, bottom = self.parse_qs_ranking(qs_row['RANK_2025'])
                     if top is None or bottom is None:
-                        self.stdout.write(self.style.WARNING(f"Universidad '{row['name']}' omitida por formato inválido de QS ranking: {row['RANK_2025']}"))
+                        self.stdout.write(self.style.WARNING(f"Universidad '{row['name']}' omitida por formato inválido de QS ranking: {qs_row['RANK_2025']}"))
                         universities_skipped += 1
                         continue
                     
-                    continent_mapped= self.map_continent(row['continent_qs'])
+                    continent_mapped= self.map_continent(qs_row['continent_qs'])
                     if continent_mapped == 'Not Classified':
-                        self.stdout.write(self.style.WARNING(f"Universidad '{row['name']}' omitida por continente no clasificado: {row['continent_qs']}"))
+                        self.stdout.write(self.style.WARNING(f"Universidad '{row['name']}' omitida por continente no clasificado: {qs_row['continent_qs']}"))
                         universities_skipped += 1
                         continue
                     
-                    status=row['status_qs'] if pd.notna(row['status_qs']) else 'Unknown'
+                    status=qs_row['status_qs'] if pd.notna(qs_row['status_qs']) else 'Unknown'
                     
-                    if 'country' not in row:
+                    if 'country' not in row or pd.isna(row['country']):
                          self.stdout.write(self.style.ERROR(f"Error: La columna 'country' no se encontró en la fila para {row['name']}."))
                          continue
+                    
+                    if 'web_pages' not in row or pd.isna(row['web_pages']):
+                        self.stdout.write(self.style.ERROR(f"Error: La columna 'web_pages' está vacía o no se encontró en la fila para {row['name']}."))
+                        universities_skipped += 1
+                        continue
 
                     obj,created = University.objects.update_or_create(
-                        name=row['name'],
+                        name=row['name'].strip(),
                         defaults={
                             'country': row['country'],
                             'web_pages': row['web_pages'],
@@ -123,6 +143,13 @@ class Command(BaseCommand):
                 return top, bottom
             except ValueError:
                 return None, None
+        if '+' in rank_str:
+            try:
+                top = int(rank_str.replace('+', ''))
+                return top, 9999 # 9999 representa "o más"
+            except ValueError:
+                return None, None
+        
         else:
             try:
                 rank = int(rank_str)

@@ -13,6 +13,7 @@ class University(models.Model):
     status = models.CharField(max_length=255, null=False, blank=False)
     continent_choices = [('Africa', 'África'),("America", "América"),("Asia", "Asia"),("Europe", "Europa"),("Oceania", "Oceania"),]
     continent = models.CharField(max_length=50, choices=continent_choices, null=False, blank=False)
+    faculties=models.ManyToManyField('faculties.Faculty', related_name='universities', blank=True)
 
     visits_count = models.IntegerField(default=0, help_text="Número de veces que se ha visto la universidad")
 
