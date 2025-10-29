@@ -12,7 +12,7 @@ export default function Navbar() {
           <NavLink to="/" end className={({isActive}) => `link ${isActive ? 'active':''}`}>Inicio</NavLink>
           <NavLink to="/universities" className={({isActive}) => `link ${isActive ? 'active':''}`}>Universidades</NavLink>
           <NavLink to="/compare" className={({isActive}) => `link ${isActive ? 'active':''}`}>Comparar</NavLink>
-          <NavLink to="/reviews" className={({isActive}) => `link ${isActive ? 'active':''}`}>Reviews</NavLink>
+          <NavLink to="/reviews" className={({isActive}) => `link ${isActive ? 'active':''}`}>Reseñas</NavLink>
           <NavLink to="/about" className={({isActive}) => `link ${isActive ? 'active':''}`}>Sobre el proyecto</NavLink>
         </div>
       </div>
