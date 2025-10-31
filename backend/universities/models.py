@@ -48,7 +48,7 @@ class University(models.Model):
         null=False,
         blank=False
     )
-    
+    faculties = models.ManyToManyField(Faculty, related_name="universities", blank=True, help_text="Facultades con las que esta universidad tiene convenio")
     visits_count = models.IntegerField(
         default=0,
         help_text="Número de veces que se ha visto la universidad"
