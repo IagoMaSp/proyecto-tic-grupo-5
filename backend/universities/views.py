@@ -469,7 +469,7 @@ class WishlistViewSet(viewsets.ModelViewSet):
         # Validar que la universidad no esté ya en la wishlist
         university = serializer.validated_data.get('university')
         if Wishlist.objects.filter(user=self.request.user, university=university).exists():
-            raise serializers.ValidationError("Esta universidad ya está en tu wishlist.")
+            raise serializer.ValidationError("Esta universidad ya está en tu wishlist.")
             
         serializer.save(user=self.request.user)
     
