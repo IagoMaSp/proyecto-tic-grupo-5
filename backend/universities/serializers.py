@@ -14,7 +14,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 
 # 3. Importaciones locales (Modelos de esta aplicación)
-from .models import University, Profile, Review, Wishlist
+from .models import University, Profile, Review, Wishlist, Faculty
 
 # --- Constantes del Módulo ---
 
@@ -23,17 +23,145 @@ from .models import University, Profile, Review, Wishlist
 FORBIDDEN_WORDS = ['spam', 'test', 'asdfgh']
 
 
-# --- Serializadores de Modelos ---
+# --- Serializadores de Modelos Auxiliares ---
 
-class UniversitySerializer(serializers.ModelSerializer):
-    """Serializador para el modelo University."""
+class FacultySerializer(serializers.ModelSerializer):
+    """
+    Serializador simple para Faculty.
+    Usado cuando necesitas mostrar info completa de facultades.
+    """
+    class Meta:
+        model = Faculty
+        fields = ['id', 'name']
+
+
+# --- Serializadores de University ---
+
+class UniversityListSerializer(serializers.ModelSerializer):
+    """
+    Serializer LIGERO para listados (cards, grids).
     
+    Solo incluye campos esenciales para mostrar en tarjetas:
+    - Identificación básica (id, name, country)
+    - Ranking QS
+    - Métricas calculadas (review_count, overall_avg_rating)
+    
+    Usado en: GET /api/universities/
+    """
     review_count = serializers.IntegerField(read_only=True)
+    overall_avg_rating = serializers.FloatField(read_only=True)
     
     class Meta:
         model = University
-        fields = '__all__'
+        fields = [
+            'id', 
+            'name', 
+            'country', 
+            'continent',
+            'qs_rating_top', 
+            'qs_rating_bottom',
+            'review_count', 
+            'overall_avg_rating'
+        ]
 
+
+class UniversitySerializer(serializers.ModelSerializer):
+    """
+    Serializer COMPLETO para detalle de universidad.
+    
+    Incluye:
+    - Todos los campos del modelo
+    - Campos calculados (review_count, overall_avg_rating)
+    - Facultades (como lista de nombres legibles)
+    - Fotos (como lista de URLs absolutas)
+    
+    Usado en: 
+    - GET /api/universities/{id}/
+    - POST/PUT/PATCH /api/universities/
+    """
+    
+    # Campos calculados (vienen del annotate en el ViewSet)
+    review_count = serializers.IntegerField(read_only=True)
+    overall_avg_rating = serializers.FloatField(read_only=True)
+    avg_social = serializers.FloatField(read_only=True)
+    avg_academic = serializers.FloatField(read_only=True)
+    avg_place = serializers.FloatField(read_only=True)
+    
+    # Facultades como lista de nombres (en lugar de IDs)
+    # Usa el método __str__() del modelo Faculty
+    faculties = serializers.StringRelatedField(many=True, read_only=True)
+    
+    # Fotos como lista de URLs absolutas
+    photos = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = University
+        fields = [
+            # Campos básicos del modelo
+            'id',
+            'name',
+            'country',
+            'continent',
+            'qs_rating_top',
+            'qs_rating_bottom',
+            'web_pages',
+            'status',
+            'visits_count',
+            
+            # Relaciones
+            'faculties',
+            'photos',
+            
+            # Campos calculados (read-only)
+            'review_count',
+            'overall_avg_rating',
+            'avg_social',
+            'avg_academic',
+            'avg_place',
+        ]
+        read_only_fields = ('visits_count',)  # No editable por usuarios
+    
+    def get_photos(self, obj):
+        """
+        Retorna lista de URLs absolutas de fotos.
+        
+        Si el request está disponible en el contexto, construye URLs completas:
+        http://localhost:8000/media/university_photos/uam.jpg
+        
+        Si no hay request (ej: en tests), retorna URLs relativas:
+        /media/university_photos/uam.jpg
+        """
+        request = self.context.get('request')
+        photos = obj.photos.all()
+        
+        if request:
+            # URLs absolutas (con dominio)
+            return [
+                request.build_absolute_uri(photo.photo.url) 
+                for photo in photos
+            ]
+        
+        # Fallback: URLs relativas
+        return [photo.photo.url for photo in photos]
+
+
+class UniversityDetailSerializer(UniversitySerializer):
+    """
+    Serializer EXTENDIDO para vista full-detail.
+    
+    Hereda de UniversitySerializer y añade:
+    - Facultades con info completa (id + name)
+    - Usado solo en acción custom full_detail
+    
+    Diferencia con UniversitySerializer:
+    - faculties: StringRelatedField → FacultySerializer completo
+    """
+    
+    # Override: Facultades con objeto completo (id, name)
+    faculties = FacultySerializer(many=True, read_only=True)
+
+
+# --- Serializadores de Review ---
 
 class ReviewSerializer(serializers.ModelSerializer):
     """
@@ -46,12 +174,24 @@ class ReviewSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     university_name = serializers.CharField(source='university.name', read_only=True)
     
+    # Opcional: Foto de perfil del usuario que hizo la review
+    user_profile_photo = serializers.SerializerMethodField()
+    
     class Meta:
         model = Review
         fields = [
-            'id', 'description', 'start_date', 'end_date',
-            'social_rating', 'academic_rating', 'place_rating',
-            'user', 'username', 'university', 'university_name',
+            'id', 
+            'description', 
+            'start_date', 
+            'end_date',
+            'social_rating', 
+            'academic_rating', 
+            'place_rating',
+            'user', 
+            'username',
+            'user_profile_photo',  # Nuevo campo
+            'university', 
+            'university_name',
             'overall_rating'
         ]
         # El usuario se infiere del contexto de la solicitud (request)
@@ -63,6 +203,22 @@ class ReviewSerializer(serializers.ModelSerializer):
         Nota: Asume que las 3 notas son campos requeridos en el modelo.
         """
         return round((obj.social_rating + obj.academic_rating + obj.place_rating) / 3, 2)
+    
+    def get_user_profile_photo(self, obj):
+        """
+        Retorna URL de la foto de perfil del usuario.
+        Útil para mostrar avatar junto a la review en el frontend.
+        """
+        if not obj.user.profile.profile_photo:
+            return None
+        
+        request = self.context.get('request')
+        photo_url = obj.user.profile.profile_photo.url
+        
+        if request:
+            return request.build_absolute_uri(photo_url)
+        
+        return photo_url
     
     # --- Métodos de Validación ---
     
@@ -141,6 +297,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         
         return cleaned_value
 
+
 # --- SERIALIZADORES DE AUTENTICACIÓN ---
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -151,10 +308,24 @@ class ProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     email = serializers.EmailField(source='user.email', read_only=True)
     
+    # URL absoluta de la foto de perfil
+    profile_photo_url = serializers.SerializerMethodField()
+    
     class Meta:
         model = Profile
-        fields = ('id', 'profile_photo', 'username', 'email')
+        fields = ('id', 'profile_photo', 'profile_photo_url', 'username', 'email')
         read_only_fields = ('user',)
+    
+    def get_profile_photo_url(self, obj):
+        """Retorna URL absoluta de la foto de perfil"""
+        if not obj.profile_photo:
+            return None
+        
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.profile_photo.url)
+        
+        return obj.profile_photo.url
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -194,8 +365,29 @@ class RegisterSerializer(serializers.ModelSerializer):
         
         return user
 
+
+# --- SERIALIZADORES DE WISHLIST ---
+
 class WishlistSerializer(serializers.ModelSerializer):
+    """
+    Serializador para wishlist.
+    Incluye info básica de la universidad para mostrar en el frontend.
+    """
+    
+    # Info de la universidad (nested read-only)
+    university_detail = UniversityListSerializer(source='university', read_only=True)
+    
     class Meta:
-        model=Wishlist
-        fields=['id','user','university']
-        read_only_fields = ['user']
+        model = Wishlist
+        fields = ['id', 'user', 'university', 'university_detail', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'created_at', 'updated_at']
+
+
+class WishlistCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer específico para crear wishlist items.
+    Solo necesita el ID de la universidad.
+    """
+    class Meta:
+        model = Wishlist
+        fields = ['university']
