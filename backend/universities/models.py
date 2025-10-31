@@ -54,6 +54,13 @@ class University(models.Model):
         help_text="Número de veces que se ha visto la universidad"
     )
 
+    faculties = models.ManyToManyField(
+        Faculty,
+        blank=True,
+        related_name='universities',
+        help_text='Facultades con las que esta universidad tiene convenio'
+    )
+
     @property
     def overall_avg_rating(self):
         """
