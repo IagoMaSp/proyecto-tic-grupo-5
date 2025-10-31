@@ -5,7 +5,10 @@ Organizado y refactorizado para claridad, corrección sintáctica y
 adherencia a las mejores prácticas de Django.
 """
 
-# Importaciones de Django (Agrupadas por módulo y ordenadas)
+# --- Importaciones ---
+# Agrupadas por origen (Django, luego librerías de terceros, luego locales)
+# y ordenadas alfabéticamente.
+
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
@@ -15,6 +18,8 @@ from django.dispatch import receiver
 from django.utils import timezone
 
 # --- Constantes del Módulo ---
+# Definir constantes a nivel de módulo para valores reutilizables
+# (como 'choices') mejora la mantenibilidad.
 
 CONTINENT_CHOICES = [
     ('Africa', 'África'),
@@ -25,13 +30,17 @@ CONTINENT_CHOICES = [
 ]
 
 # --- Modelos Principales ---
+# Los modelos se organizan lógicamente. Los modelos de los que
+# otros dependen (como Faculty) se definen primero.
 
 
 class Faculty(models.Model):
+    """Modelo simple para almacenar facultades."""
     name = models.CharField(max_length=16, null=False, blank=False, unique=True)
 
     def __str__(self):
         return self.name
+
 
 class University(models.Model):
     """Almacena información sobre una universidad específica."""
@@ -44,7 +53,7 @@ class University(models.Model):
     status = models.CharField(max_length=255, null=False, blank=False)
     continent = models.CharField(
         max_length=50,
-        choices=CONTINENT_CHOICES,  # REFACTOR: Uso de constante de módulo
+        choices=CONTINENT_CHOICES,
         null=False,
         blank=False
     )
@@ -67,9 +76,9 @@ class University(models.Model):
         Calcula el promedio general de las calificaciones (social, académica, lugar)
         de todas las revisiones asociadas, ignorando los valores nulos.
         
-        CORRECCIÓN:
-        - Se utiliza `Avg` de django.db.models.
-        - Lógica de cálculo simplificada y corregida para mayor legibilidad.
+        Nota: La lógica existente divide la suma de los promedios válidos por 3
+        (el número total de categorías), no por el número de categorías
+        que tienen calificaciones.
         """
         avg_ratings = self.reviews.aggregate(
             social=Avg('social_rating'),
@@ -95,6 +104,11 @@ class University(models.Model):
     class Meta:
         verbose_name = "Universidad"
         verbose_name_plural = "Universidades"
+        indexes = [
+            models.Index(fields=['country']),     
+            models.Index(fields=['continent']),    
+            models.Index(fields=['qs_rating_top']), 
+        ]
         constraints = [
             # Asegura que el rango de rating sea lógico
             models.CheckConstraint(
@@ -102,6 +116,7 @@ class University(models.Model):
                 name="qs_rating_bottom_gte_qs_rating_top"
             )
         ]
+
 
 class PhotosUniversity(models.Model):
     """Almacena imágenes asociadas a una universidad."""
@@ -174,7 +189,11 @@ class Wishlist(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        # Defensa contra errores en admin si falta un usuario o universidad
+        """
+        Retorna una representación legible.
+        Incluye manejo de errores por si el usuario o universidad
+        relacionados han sido eliminados de forma anómala.
+        """
         try:
             return f'Wishlist de {self.user.username}: {self.university.name}'
         except (User.DoesNotExist, University.DoesNotExist):
@@ -256,6 +275,8 @@ class Review(models.Model):
 
 # Funciones para la creación y guardado automático del perfil de usuario
 # asociado al modelo User de Django.
+# Es una buena práctica mantener los signals al final del archivo
+# o en su propio archivo (signals.py).
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -267,4 +288,8 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender, instance, **kwargs):
     """Guarda el Profile asociado automáticamente cuando se guarda el User."""
     # Se asume la relación 'profile' definida en el OneToOneField.
-    instance.profile.save()
+    try:
+        instance.profile.save()
+    except Profile.DoesNotExist:
+        # Manejo defensivo por si el perfil no se creó
+        Profile.objects.create(user=instance)
