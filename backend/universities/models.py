@@ -26,6 +26,13 @@ CONTINENT_CHOICES = [
 
 # --- Modelos Principales ---
 
+
+class Faculty(models.Model):
+    name = models.CharField(max_length=16, null=False, blank=False, unique=True)
+
+    def __str__(self):
+        return self.name
+
 class University(models.Model):
     """Almacena información sobre una universidad específica."""
     
@@ -35,7 +42,6 @@ class University(models.Model):
     qs_rating_bottom = models.IntegerField(null=False, blank=False)
     web_pages = models.URLField(null=False, blank=False)
     status = models.CharField(max_length=255, null=False, blank=False)
-    
     continent = models.CharField(
         max_length=50,
         choices=CONTINENT_CHOICES,  # REFACTOR: Uso de constante de módulo
@@ -89,7 +95,6 @@ class University(models.Model):
                 name="qs_rating_bottom_gte_qs_rating_top"
             )
         ]
-
 
 class PhotosUniversity(models.Model):
     """Almacena imágenes asociadas a una universidad."""
