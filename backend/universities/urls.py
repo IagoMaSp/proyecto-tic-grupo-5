@@ -32,9 +32,9 @@ from .views import (
 # (list, create, retrieve, update, destroy) y la vista raíz de la API.
 router = DefaultRouter()
 
-router.register(r'universities', UniversityViewSet)
-router.register(r'reviews', ReviewViewSet)
-router.register(r'wishlists', WishlistViewSet)
+router.register(r'universities', UniversityViewSet, basename='universities')
+router.register(r'reviews', ReviewViewSet, basename='reviews')
+router.register(r'wishlists', WishlistViewSet, basename='wishlists')
 # NOTA: ProfileView se maneja como una vista estándar (no ViewSet) más abajo.
 
 
