@@ -69,17 +69,17 @@ class University(models.Model):
         related_name='universities',
         help_text='Facultades con las que esta universidad tiene convenio'
     )
-
+    """
     @property
     def overall_avg_rating(self):
-        """
+        
         Calcula el promedio general de las calificaciones (social, académica, lugar)
         de todas las revisiones asociadas, ignorando los valores nulos.
         
         Nota: La lógica existente divide la suma de los promedios válidos por 3
         (el número total de categorías), no por el número de categorías
         que tienen calificaciones.
-        """
+        
         avg_ratings = self.reviews.aggregate(
             social=Avg('social_rating'),
             academic=Avg('academic_rating'),
@@ -97,6 +97,7 @@ class University(models.Model):
         
         # Retorna None si no hay calificaciones válidas
         return None
+    """
 
     def __str__(self):
         return self.name

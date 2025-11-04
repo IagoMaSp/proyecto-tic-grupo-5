@@ -56,6 +56,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     Endpoint: GET /api/profile/, PUT /api/profile/, PATCH /api/profile/
     Permite a un usuario autenticado ver y actualizar su propio perfil.
     """
+    queryset = Profile.objects.all()
     permission_classes = (IsAuthenticated,)
     serializer_class = ProfileSerializer
 
@@ -92,7 +93,7 @@ class UniversityViewSet(viewsets.ModelViewSet):
     - GET /api/universities/by-continent/    → Filtrar por continente
     - POST /api/universities/{id}/increment-visits/ → Incrementar visitas manualmente
     """
-    
+    queryset = University.objects.all()
     # --- Configuración Base ---
     permission_classes = [AllowAny]
     
@@ -200,7 +201,7 @@ class UniversityViewSet(viewsets.ModelViewSet):
         )
         
         response.data['metadata'] = {
-            'total_universities': self.paginator.count if self.paginator else queryset.count(),
+            'total_universities': self.paginator.page.paginator.count if self.paginator else queryset.count(),
             'unique_countries': stats['total_countries'],
             'unique_continents': stats['total_continents'],
             'avg_qs_rating': stats['avg_qs'],
@@ -453,6 +454,7 @@ class WishlistViewSet(viewsets.ModelViewSet):
     Permite a un usuario gestionar su propia lista de deseos.
     Incluye acciones personalizadas para añadir y eliminar por ID de universidad.
     """
+    queryset = Wishlist.objects.all()
     serializer_class = WishlistSerializer
     permission_classes = [IsAuthenticated]
     
