@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('universities.urls')),  # ← AGREGAR ESTO
+    path('api/', include('universities.urls')),
 ]
 
 # Para servir archivos media en desarrollo

@@ -171,7 +171,7 @@ class Command(BaseCommand):
     def map_continent(self, continent_qs):
         mapping ={
             'Americas': 'America',
-            'Europe': 'Europe',
+            'Europe': 'Europa',
             'Asia': 'Asia',
             'Oceania': 'Oceania',
             'Africa': 'Africa'
