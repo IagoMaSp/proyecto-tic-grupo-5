@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 // Tipos
 type University = {
@@ -13,7 +14,7 @@ type University = {
   visits_count: number;
 };
 
-type SortOption = "qs_asc" | "qs_desc" | "academic_desc" | "social_desc" | "place_desc" | "visits_desc";
+type SortOption = "qs_rating_top" | "-qs_rating_top" | "-overall_avg_rating" | "-visits_count";
 
 // Constantes
 const COUNTRIES = ["Argentina", "Chile", "España", "Portugal", "México", "Colombia", "Brasil", "Italia", "Francia", "Alemania"];
@@ -24,7 +25,7 @@ export default function Universities() {
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState("");
   const [faculty, setFaculty] = useState("");
-  const [sortBy, setSortBy] = useState<SortOption>("qs_asc");
+  const [sortBy, setSortBy] = useState<SortOption>("qs_rating_top");
   const [universities, setUniversities] = useState<University[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
@@ -43,22 +44,42 @@ export default function Universities() {
     setError(null);
     
     try {
-      const params = new URLSearchParams({
-        ...(query && { search: query }),
-        ...(country && { country }),
-        ...(sortBy && { ordering: sortBy }),
-      });
+      const params = new URLSearchParams();
+      
+      if (query) params.append("search", query);
+      if (country) params.append("country", country);
+      if (sortBy) params.append("ordering", sortBy);
 
-      const res = await fetch(`/api/universities/?${params.toString()}`, {
-        headers: { Accept: "application/json" },
+      const res = await fetch(`http://localhost:8000/api/universities/?${params.toString()}`, {
+        headers: { 
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
       });
 
       if (!res.ok) {
         throw new Error(`Error ${res.status}: No se pudieron cargar las universidades`);
       }
 
-      const data: University[] = await res.json();
-      setUniversities(data);
+      const data = await res.json();
+      
+      // Manejar respuesta paginada o array directo
+      let universities: University[];
+      
+      if (Array.isArray(data)) {
+        // Respuesta directa (array)
+        universities = data;
+      } else if (data && Array.isArray(data.results)) {
+        // Respuesta paginada (con results)
+        universities = data.results;
+      } else {
+        console.error("El backend no devolvió un formato válido:", data);
+        setError("Formato de respuesta incorrecto del backend");
+        setUniversities([]);
+        return;
+      }
+      
+      setUniversities(universities);
     } catch (err) {
       console.error("Error cargando universidades:", err);
       setError(err instanceof Error ? err.message : "Error al cargar universidades");
@@ -148,16 +169,14 @@ export default function Universities() {
                 <label className="filter-section-label">Ordenar por</label>
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)} className="filter-select" style={{ maxWidth: "400px" }}>
                   <optgroup label="Ranking QS">
-                    <option value="qs_asc">QS: Mejor a peor (1 → 1000)</option>
-                    <option value="qs_desc">QS: Peor a mejor (1000 → 1)</option>
+                    <option value="-qs_rating_top">QS: Descendente</option>
+                    <option value="qs_rating_top">QS: Ascendente (menor número = mejor)</option>
                   </optgroup>
                   <optgroup label="Valoración de alumnos">
-                    <option value="academic_desc">Educación: Mejor valorada</option>
-                    <option value="social_desc">Vida social: Mejor valorada</option>
-                    <option value="place_desc">Ubicación: Mejor valorada</option>
+                    <option value="-overall_avg_rating">Mejor valoradas por alumnos</option>
                   </optgroup>
                   <optgroup label="Popularidad">
-                    <option value="visits_desc">Más visitadas</option>
+                    <option value="-visits_count">Más visitadas</option>
                   </optgroup>
                 </select>
               </div>
@@ -239,7 +258,11 @@ function EmptyState({ query, onClear }: { query: string; onClear: () => void }) 
 
 function UniversityCard({ university, index }: { university: University; index: number }) {
   return (
-    <div className="university-card" style={{ animationDelay: `${index * 0.05}s` }}>
+    <Link 
+      to={`/universities/${university.id}`} 
+      className="university-card" 
+      style={{ animationDelay: `${index * 0.05}s`, textDecoration: 'none', color: 'inherit' }}
+    >
       <h3 className="uni-name">{university.name}</h3>
       <div className="uni-country">
         <span>📍</span>
@@ -260,6 +283,6 @@ function UniversityCard({ university, index }: { university: University; index: 
           </div>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
