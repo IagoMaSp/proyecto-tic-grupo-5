@@ -84,9 +84,9 @@ export default function Home() {
   ];
 
   const stats = [
-    { value: "200+", label: "Universidades" },
+    { value: "70+", label: "Universidades" },
     { value: "40+", label: "Países" },
-    { value: "500+", label: "Reseñas" },
+    { value: "100+", label: "Reseñas" },
   ];
 
   return (
