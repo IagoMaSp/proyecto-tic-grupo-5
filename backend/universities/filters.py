@@ -35,6 +35,11 @@ class UniversityFilter(django_filters.FilterSet):
     # Búsqueda por Continente (case-insensitive)
     continent = django_filters.CharFilter(lookup_expr='icontains')
 
+    faculties = django_filters.CharFilter(
+        field_name='faculties__name',
+        lookup_expr='iexact'  # Coincidencia exacta, case-insensitive
+    )
+
     # --- Filtros Numéricos (Ratings) ---
     
     # Filtro de Ranking QS (mínimo)
@@ -75,6 +80,7 @@ class UniversityFilter(django_filters.FilterSet):
             'name',
             'country',
             'continent',
+            'faculties',
             'min_qs',
             'min_overall_rating',
             'min_social_rating',

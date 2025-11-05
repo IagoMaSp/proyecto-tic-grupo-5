@@ -61,8 +61,12 @@ class UniversityListSerializer(serializers.ModelSerializer):
             'qs_rating_top', 
             'qs_rating_bottom',
             'review_count', 
+            'overall_avg_rating',
+            'faculties',
+            'review_count',
             'overall_avg_rating'
         ]
+    
 
 
 class UniversitySerializer(serializers.ModelSerializer):
