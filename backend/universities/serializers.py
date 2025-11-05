@@ -415,3 +415,13 @@ class WishlistCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wishlist
         fields = ['university']
+
+# --- ProfileSerializer que faltaba ---
+class ProfileSerializer(serializers.ModelSerializer):
+    """Serializer para perfil de usuario."""
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    
+    class Meta:
+        model = Profile
+        fields = ['id', 'username', 'email', 'profile_photo']
