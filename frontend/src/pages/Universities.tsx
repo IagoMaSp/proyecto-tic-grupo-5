@@ -17,7 +17,6 @@ type University = {
 type SortOption = "qs_rating_top" | "-qs_rating_top" | "-overall_avg_rating" | "-visits_count";
 
 // Constantes
-const COUNTRIES = ["Argentina", "Chile", "España", "Portugal", "México", "Colombia", "Brasil", "Italia", "Francia", "Alemania"];
 const FACULTIES = ["FIUM", "FCEE", "Psicología", "FHUMyE", "FCOM", "FDER"];
 
 export default function Universities() {
@@ -27,18 +26,43 @@ export default function Universities() {
   const [faculty, setFaculty] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("qs_rating_top");
   const [universities, setUniversities] = useState<University[]>([]);
+  const [countries, setCountries] = useState<string[]>([]); // ← NUEVO
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "UM Exchange | Universidades";
+    fetchCountries();
+
   }, []);
 
   useEffect(() => {
     fetchUniversities();
   }, [query, country, faculty, sortBy]);
   
+  async function fetchCountries() {
+    try {
+      const res = await fetch("http://localhost:8000/api/universities/countries/", {
+        headers: { 
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("No se pudieron cargar los países");
+      }
+
+      const data = await res.json();
+      setCountries(data.countries || []);
+    } catch (err) {
+      console.error("Error cargando países:", err);
+      // Fallback a lista vacía (o podrías usar la constante hardcodeada)
+      setCountries([]);
+    }
+  }
+
   async function fetchUniversities() {
     setLoading(true);
     setError(null);
@@ -48,6 +72,7 @@ export default function Universities() {
       
       if (query) params.append("search", query);
       if (country) params.append("country", country);
+      if (faculty) params.append("faculties", faculty);
       if (sortBy) params.append("ordering", sortBy);
 
       const res = await fetch(`http://localhost:8000/api/universities/?${params.toString()}`, {
@@ -151,7 +176,7 @@ export default function Universities() {
                     <label className="filter-label">País</label>
                     <select value={country} onChange={(e) => setCountry(e.target.value)} className="filter-select">
                       <option value="">Todos los países</option>
-                      {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      {countries.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
 
