@@ -300,21 +300,17 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 # --- SERIALIZADORES DE AUTENTICACIÓN ---
 
-class ProfileSerializer(serializers.ModelSerializer):
+class ProfileNestedSerializer(serializers.ModelSerializer):
     """
-    Serializador para el modelo Profile.
-    Usado para leer y actualizar el perfil de un usuario existente.
+    Serializador para el modelo Profile *anidado* dentro del usuario.
+    Coincide con la interfaz 'profile' del frontend.
     """
-    username = serializers.CharField(source='user.username', read_only=True)
-    email = serializers.EmailField(source='user.email', read_only=True)
-    
-    # URL absoluta de la foto de perfil
     profile_photo_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Profile
-        fields = ('id', 'profile_photo', 'profile_photo_url', 'username', 'email')
-        read_only_fields = ('user',)
+        fields = ('id', 'profile_photo', 'profile_photo_url')
+        read_only_fields = ('id', 'profile_photo_url')
     
     def get_profile_photo_url(self, obj):
         """Retorna URL absoluta de la foto de perfil"""
@@ -328,41 +324,69 @@ class ProfileSerializer(serializers.ModelSerializer):
         return obj.profile_photo.url
 
 
+class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializador principal para el modelo User.
+    Este es el formato que espera tu frontend (authContext.tsx).
+    """
+    # CORRECCIÓN: Se eliminó 'source="profile"' porque es redundante
+    profile = ProfileNestedSerializer(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'profile')
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     """
     Serializador para el registro (creación) de nuevos usuarios (modelo User).
+    Optimizado para devolver el UserSerializer completo al crear.
     """
-    # El perfil no se incluye aquí para la escritura,
-    # ya que se crea automáticamente mediante una señal en models.py
-    profile = ProfileSerializer(read_only=True)
+    # CORRECCIÓN: Se eliminó 'source="profile"' porque es redundante
+    profile = ProfileNestedSerializer(read_only=True)
+    password = serializers.CharField(write_only=True, required=True)
     
+    # Añadimos la confirmación de contraseña para validación
+    password_confirm = serializers.CharField(write_only=True, required=True)
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'password', 'profile')
+        fields = ('id', 'username', 'email', 'password', 'password_confirm', 'profile')
         extra_kwargs = {
-            # El password solo se usa para escribir (write_only)
             'password': {'write_only': True},
-            # Asegura que el email sea siempre requerido en el registro
             'email': {'required': True}
         }
 
+    def validate_email(self, value):
+        """Validar que el email no esté en uso."""
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("Este email ya está en uso.")
+        return value
+
+    def validate_username(self, value):
+        """Validar que el nombre de usuario no esté en uso."""
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError("Este nombre de usuario ya está en uso.")
+        return value
+        
+    def validate(self, attrs):
+        """Validar que las contraseñas coincidan."""
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError({"password_confirm": "Las contraseñas no coinciden."})
+        return attrs
+
     def create(self, validated_data):
         """
-        Sobrescribe el método 'create' para usar 'create_user' de Django,
-        que maneja correctamente el hash de la contraseña.
+        Sobrescribe 'create' para usar 'create_user' (maneja hash de contraseña)
+        y asegura que la señal de Profile se ejecute.
         """
-        
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password']
         )
-        
-        # NOTA: No es necesario crear el Profile aquí.
-        # La señal @receiver(post_save, sender=User) en 'models.py'
-        # se encarga automáticamente de crear el Profile
-        # inmediatamente después de que este 'create_user' se complete.
-        
+        # La señal post_save creará el Profile.
+        # 'user' ahora tiene 'user.profile' disponible.
         return user
 
 
@@ -391,3 +415,13 @@ class WishlistCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wishlist
         fields = ['university']
+
+# --- ProfileSerializer que faltaba ---
+class ProfileSerializer(serializers.ModelSerializer):
+    """Serializer para perfil de usuario."""
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    
+    class Meta:
+        model = Profile
+        fields = ['id', 'username', 'email', 'profile_photo']

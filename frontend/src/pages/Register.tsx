@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+// 1. Importar el servicio de autenticación
+import { authService } from "../services/authService";
+// 2. ¡AÑADIR LA IMPORTACIÓN DE useAuth!
+import { useAuth } from "../contexts/authContext";
 
 export default function Register() {
   const navigate = useNavigate();
+  // 3. OBTENER LA FUNCIÓN 'login' DEL CONTEXTO
+  const { login } = useAuth();
   
   useEffect(() => {
     document.title = "UM Exchange | Registrarse";
@@ -18,15 +24,22 @@ export default function Register() {
   
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // 2. Añadir 'general' para errores de API
   const [errors, setErrors] = useState<{
     username?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
     acceptTerms?: string;
+    general?: string; 
   }>({});
+  
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  
+  // 3. Añadir estado para mensaje de éxito (lo quitaremos del submit)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -34,12 +47,15 @@ export default function Register() {
     
     setFormData((prev) => ({ ...prev, [name]: newValue }));
     
-    // Limpiar error del campo
-    if (errors[name as keyof typeof errors]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    // Limpiar errores
+    if (errors[name as keyof typeof errors] || errors.general) {
+      setErrors((prev) => ({ 
+        ...prev, 
+        [name]: undefined, 
+        general: undefined 
+      }));
     }
 
-    // Calcular fuerza de contraseña
     if (name === "password") {
       calculatePasswordStrength(value);
     }
@@ -66,7 +82,6 @@ export default function Register() {
   const validate = () => {
     const newErrors: typeof errors = {};
     
-    // Username
     if (!formData.username.trim()) {
       newErrors.username = "El nombre de usuario es requerido";
     } else if (formData.username.length < 3) {
@@ -75,28 +90,24 @@ export default function Register() {
       newErrors.username = "Solo letras, números y guion bajo";
     }
     
-    // Email
     if (!formData.email.trim()) {
       newErrors.email = "El email es requerido";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Email inválido";
     }
     
-    // Password
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida";
     } else if (formData.password.length < 8) {
       newErrors.password = "Debe tener al menos 8 caracteres";
     }
     
-    // Confirm Password
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = "Confirmá tu contraseña";
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Las contraseñas no coinciden";
     }
     
-    // Terms
     if (!formData.acceptTerms) {
       newErrors.acceptTerms = "Debes aceptar los términos y condiciones";
     }
@@ -105,20 +116,43 @@ export default function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // 4. handleSubmit con la lógica de auto-login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    setSuccessMessage(null); // Limpiar mensajes
     
     if (!validate()) return;
 
     setIsLoading(true);
     
-    // Simulación de llamada a la API
-    setTimeout(() => {
+    try {
+      // Paso 1: Registrar el usuario
+      await authService.register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        password_confirm: formData.confirmPassword, 
+      });
+
+      // Paso 2: Iniciar sesión automáticamente si el registro fue exitoso
+      await login(formData.username, formData.password);
+      
+      // Paso 3: Redirigir al Home (el Navbar ya estará actualizado)
+      navigate("/");
+
+    } catch (error) {
+      // Manejar errores (ya sea de registro o de inicio de sesión)
+      console.error("Error en registro/login:", error);
+      setErrors({
+        general: error instanceof Error 
+          ? error.message 
+          : "Ocurrió un error inesperado.",
+      });
+    } finally {
+      // Detener la carga en cualquier caso (éxito o error)
       setIsLoading(false);
-      console.log("Register attempt:", formData);
-      // Después del registro exitoso, redirigir al login
-      // navigate("/login");
-    }, 2000);
+    }
   };
 
   const strengthBar = getPasswordStrengthLabel();
@@ -126,7 +160,6 @@ export default function Register() {
   return (
     <section className="register-container">
       <div className="register-wrapper">
-        {/* Columna izquierda - Branding */}
         <div className="register-brand">
           <div className="brand-content">
             <div className="brand-logo">
@@ -175,7 +208,6 @@ export default function Register() {
           </div>
         </div>
 
-        {/* Columna derecha - Formulario */}
         <div className="register-form-section">
           <div className="form-container">
             <div className="form-header">
@@ -184,6 +216,26 @@ export default function Register() {
             </div>
 
             <form onSubmit={handleSubmit} className="register-form" noValidate>
+              
+              {/* 5. Mostrar errores generales de API */}
+              {errors.general && (
+                <div className="alert-error">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span>{errors.general}</span>
+                </div>
+              )}
+              
+              {/* 6. Mostrar mensaje de éxito */}
+              {successMessage && (
+                <div className="alert-success">
+                  <span>{successMessage}</span>
+                </div>
+              )}
+
               {/* Username */}
               <div className="form-group">
                 <label htmlFor="username" className="form-label">
@@ -199,6 +251,7 @@ export default function Register() {
                     className={`form-input ${errors.username ? "error" : ""}`}
                     placeholder="tu_usuario"
                     autoComplete="username"
+                    disabled={isLoading}
                   />
                   <div className="input-icon">
                     <svg
@@ -236,6 +289,7 @@ export default function Register() {
                     className={`form-input ${errors.email ? "error" : ""}`}
                     placeholder="tu@email.com"
                     autoComplete="email"
+                    disabled={isLoading}
                   />
                   <div className="input-icon">
                     <svg
@@ -273,6 +327,7 @@ export default function Register() {
                     className={`form-input ${errors.password ? "error" : ""}`}
                     placeholder="••••••••"
                     autoComplete="new-password"
+                    disabled={isLoading}
                   />
                   <div className="input-icon">
                     <svg
@@ -294,6 +349,7 @@ export default function Register() {
                     className="toggle-password"
                     onClick={() => setShowPassword(!showPassword)}
                     tabIndex={-1}
+                    disabled={isLoading}
                   >
                     {showPassword ? (
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -309,7 +365,6 @@ export default function Register() {
                   </button>
                 </div>
                 
-                {/* Password strength indicator */}
                 {formData.password && (
                   <div className="password-strength">
                     <div className="strength-bar-container">
@@ -351,6 +406,7 @@ export default function Register() {
                     className={`form-input ${errors.confirmPassword ? "error" : ""}`}
                     placeholder="••••••••"
                     autoComplete="new-password"
+                    disabled={isLoading}
                   />
                   <div className="input-icon">
                     <svg
@@ -371,6 +427,7 @@ export default function Register() {
                     className="toggle-password"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     tabIndex={-1}
+                    disabled={isLoading}
                   >
                     {showConfirmPassword ? (
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -399,6 +456,7 @@ export default function Register() {
                     checked={formData.acceptTerms}
                     onChange={handleChange}
                     className={`terms-checkbox ${errors.acceptTerms ? "error" : ""}`}
+                    disabled={isLoading}
                   />
                   <span className="terms-text">
                     Acepto los{" "}
@@ -460,6 +518,61 @@ export default function Register() {
       </div>
 
       <style>{`
+        /* Alerta de error */
+        .alert-error {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          border-radius: 12px;
+          color: #991b1b;
+          font-size: 0.9rem;
+          animation: slideDown 0.3s ease-out;
+        }
+
+        /* Alerta de éxito */
+        .alert-success {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          background: #f0fdf4;
+          border: 1px solid #bbf7d0;
+          border-radius: 12px;
+          color: #166534;
+          font-size: 0.9rem;
+          animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .form-input:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          background: #f9fafb;
+        }
+        
+        .toggle-password:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        
+        .terms-checkbox:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
         .register-container {
           min-height: calc(100vh - 64px);
           display: flex;
@@ -470,7 +583,6 @@ export default function Register() {
           position: relative;
           overflow: hidden;
         }
-
         .register-container::before {
           content: "";
           position: absolute;
@@ -483,12 +595,10 @@ export default function Register() {
             radial-gradient(circle at 20% 80%, rgba(24, 74, 166, 0.06) 0%, transparent 50%);
           animation: gradientShift 25s ease infinite;
         }
-
         @keyframes gradientShift {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(-5%, -5%) rotate(180deg); }
         }
-
         .register-wrapper {
           position: relative;
           z-index: 1;
@@ -504,7 +614,6 @@ export default function Register() {
             0 0 0 1px rgba(24, 74, 166, 0.08);
           animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-
         @keyframes slideUp {
           from {
             opacity: 0;
@@ -515,8 +624,6 @@ export default function Register() {
             transform: translateY(0);
           }
         }
-
-        /* === COLUMNA IZQUIERDA - BRANDING === */
         .register-brand {
           background: linear-gradient(180deg, var(--um-blue-700) 0%, var(--um-blue-900) 100%);
           padding: 60px 50px;
@@ -526,7 +633,6 @@ export default function Register() {
           position: relative;
           overflow: hidden;
         }
-
         .register-brand::before {
           content: "";
           position: absolute;
@@ -538,7 +644,6 @@ export default function Register() {
           border-radius: 50%;
           animation: float 10s ease-in-out infinite;
         }
-
         .register-brand::after {
           content: "";
           position: absolute;
@@ -550,18 +655,15 @@ export default function Register() {
           border-radius: 50%;
           animation: float 12s ease-in-out infinite reverse;
         }
-
         @keyframes float {
           0%, 100% { transform: translate(0, 0); }
           50% { transform: translate(15px, 15px); }
         }
-
         .brand-content {
           position: relative;
           z-index: 1;
           animation: fadeInLeft 0.8s ease-out 0.2s backwards;
         }
-
         @keyframes fadeInLeft {
           from {
             opacity: 0;
@@ -572,11 +674,9 @@ export default function Register() {
             transform: translateX(0);
           }
         }
-
         .brand-logo {
           margin-bottom: 24px;
         }
-
         .logo-circle {
           width: 72px;
           height: 72px;
@@ -590,12 +690,10 @@ export default function Register() {
           border: 1px solid rgba(255, 255, 255, 0.2);
           animation: pulse 3s ease-in-out infinite;
         }
-
         @keyframes pulse {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.05); }
         }
-
         .brand-title {
           font-size: 32px;
           font-weight: 900;
@@ -603,32 +701,27 @@ export default function Register() {
           margin: 0 0 16px;
           letter-spacing: 0.3px;
         }
-
         .brand-desc {
           font-size: 16px;
           line-height: 1.6;
           color: rgba(255, 255, 255, 0.85);
           margin: 0 0 40px;
         }
-
         .brand-features {
           display: flex;
           flex-direction: column;
           gap: 16px;
         }
-
         .feature-item {
           display: flex;
           align-items: center;
           gap: 12px;
           animation: slideInLeft 0.5s ease-out backwards;
         }
-
         .feature-item:nth-child(1) { animation-delay: 0.4s; }
         .feature-item:nth-child(2) { animation-delay: 0.5s; }
         .feature-item:nth-child(3) { animation-delay: 0.6s; }
         .feature-item:nth-child(4) { animation-delay: 0.7s; }
-
         @keyframes slideInLeft {
           from {
             opacity: 0;
@@ -639,7 +732,6 @@ export default function Register() {
             transform: translateX(0);
           }
         }
-
         .feature-icon {
           width: 28px;
           height: 28px;
@@ -655,28 +747,23 @@ export default function Register() {
           border: 1px solid rgba(255, 255, 255, 0.3);
           flex-shrink: 0;
         }
-
         .feature-text {
           color: rgba(255, 255, 255, 0.9);
           font-size: 14px;
           font-weight: 500;
           line-height: 1.4;
         }
-
-        /* === COLUMNA DERECHA - FORMULARIO === */
         .register-form-section {
           padding: 50px 50px;
           display: flex;
           align-items: center;
           justify-content: center;
         }
-
         .form-container {
           width: 100%;
           max-width: 420px;
           animation: fadeInRight 0.8s ease-out 0.3s backwards;
         }
-
         @keyframes fadeInRight {
           from {
             opacity: 0;
@@ -687,47 +774,39 @@ export default function Register() {
             transform: translateX(0);
           }
         }
-
         .form-header {
           margin-bottom: 28px;
         }
-
         .form-title {
           font-size: 28px;
           font-weight: 900;
           color: var(--um-blue-900);
           margin: 0 0 8px;
         }
-
         .form-subtitle {
           font-size: 15px;
           color: var(--muted);
           margin: 0;
         }
-
         .register-form {
           display: flex;
           flex-direction: column;
           gap: 18px;
         }
-
         .form-group {
           display: flex;
           flex-direction: column;
           gap: 8px;
         }
-
         .form-label {
           font-size: 14px;
           font-weight: 600;
           color: var(--ink);
           margin-bottom: 4px;
         }
-
         .input-wrapper {
           position: relative;
         }
-
         .form-input {
           width: 100%;
           height: 48px;
@@ -740,24 +819,19 @@ export default function Register() {
           transition: all 0.2s ease;
           outline: none;
         }
-
         .form-input::placeholder {
           color: #9ca3af;
         }
-
         .form-input:focus {
           border-color: var(--um-blue-600);
           box-shadow: 0 0 0 4px rgba(31, 94, 209, 0.08);
         }
-
         .form-input.error {
           border-color: #ef4444;
         }
-
         .form-input.error:focus {
           box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.08);
         }
-
         .input-icon {
           position: absolute;
           left: 14px;
@@ -767,11 +841,9 @@ export default function Register() {
           pointer-events: none;
           transition: color 0.2s ease;
         }
-
         .form-input:focus + .input-icon {
           color: var(--um-blue-600);
         }
-
         .toggle-password {
           position: absolute;
           right: 12px;
@@ -788,12 +860,10 @@ export default function Register() {
           border-radius: 6px;
           transition: all 0.2s ease;
         }
-
         .toggle-password:hover {
           color: var(--um-blue-600);
           background: rgba(31, 94, 209, 0.05);
         }
-
         .error-message {
           font-size: 13px;
           color: #ef4444;
@@ -802,39 +872,32 @@ export default function Register() {
           gap: 4px;
           animation: shake 0.4s ease;
         }
-
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-4px); }
           75% { transform: translateX(4px); }
         }
-
-        /* Password Strength Indicator */
         .password-strength {
           display: flex;
           align-items: center;
           gap: 12px;
           margin-top: 8px;
         }
-
         .strength-bar-container {
           flex: 1;
           display: flex;
           gap: 4px;
           height: 4px;
         }
-
         .strength-bar {
           flex: 1;
           background: #e5e7eb;
           border-radius: 2px;
           transition: all 0.3s ease;
         }
-
         .strength-bar.active {
           animation: growBar 0.3s ease;
         }
-
         @keyframes growBar {
           from {
             transform: scaleX(0);
@@ -843,14 +906,11 @@ export default function Register() {
             transform: scaleX(1);
           }
         }
-
         .strength-label {
           font-size: 12px;
           font-weight: 600;
           min-width: 70px;
         }
-
-        /* Terms and Conditions */
         .terms-label {
           display: flex;
           align-items: flex-start;
@@ -861,11 +921,9 @@ export default function Register() {
           border-radius: 10px;
           transition: background 0.2s ease;
         }
-
         .terms-label:hover {
           background: rgba(31, 94, 209, 0.03);
         }
-
         .terms-checkbox {
           width: 20px;
           height: 20px;
@@ -874,31 +932,26 @@ export default function Register() {
           margin-top: 2px;
           flex-shrink: 0;
         }
-
         .terms-checkbox.error {
           outline: 2px solid #ef4444;
           outline-offset: 2px;
           border-radius: 4px;
         }
-
         .terms-text {
           font-size: 14px;
           color: var(--muted);
           line-height: 1.5;
         }
-
         .terms-link {
           color: var(--um-blue-700);
           text-decoration: none;
           font-weight: 600;
           transition: color 0.2s ease;
         }
-
         .terms-link:hover {
           color: var(--um-blue-600);
           text-decoration: underline;
         }
-
         .submit-button {
           width: 100%;
           height: 48px;
@@ -916,22 +969,18 @@ export default function Register() {
           transition: all 0.2s ease;
           margin-top: 8px;
         }
-
         .submit-button:hover:not(:disabled) {
           background: var(--um-blue-600);
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(31, 94, 209, 0.3);
         }
-
         .submit-button:active:not(:disabled) {
           transform: translateY(0);
         }
-
         .submit-button:disabled {
           opacity: 0.7;
           cursor: not-allowed;
         }
-
         .spinner {
           width: 18px;
           height: 18px;
@@ -940,11 +989,9 @@ export default function Register() {
           border-radius: 50%;
           animation: spin 0.6s linear infinite;
         }
-
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
-
         .form-footer {
           text-align: center;
           padding-top: 20px;
@@ -954,12 +1001,10 @@ export default function Register() {
           justify-content: center;
           gap: 6px;
         }
-
         .footer-text {
           font-size: 14px;
           color: var(--muted);
         }
-
         .link-text {
           font-size: 14px;
           color: var(--um-blue-700);
@@ -967,61 +1012,47 @@ export default function Register() {
           font-weight: 600;
           transition: color 0.2s ease;
         }
-
         .link-text:hover {
           color: var(--um-blue-600);
           text-decoration: underline;
         }
-
         .link-text.strong {
           font-weight: 700;
         }
-
-        /* === RESPONSIVE === */
         @media (max-width: 1024px) {
           .register-wrapper {
             grid-template-columns: 1fr;
           }
-
           .register-brand {
             padding: 40px 30px;
           }
-
           .register-form-section {
             padding: 40px 30px;
             max-height: none;
           }
         }
-
         @media (max-width: 480px) {
           .register-container {
             padding: 20px 16px;
           }
-
           .register-wrapper {
             border-radius: 16px;
           }
-
           .register-brand {
             padding: 30px 24px;
           }
-
           .register-form-section {
             padding: 30px 24px;
           }
-
           .form-title {
             font-size: 24px;
           }
-
           .brand-title {
             font-size: 26px;
           }
-
           .form-input {
             height: 44px;
           }
-
           .submit-button {
             height: 44px;
           }
