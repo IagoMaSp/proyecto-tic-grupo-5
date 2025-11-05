@@ -385,6 +385,21 @@ class UniversityViewSet(viewsets.ModelViewSet):
             'visits_count': university.visits_count
         })
     
+    @action(detail=False, methods=['get'], url_path='countries')
+    def countries(self, request):
+        """
+        GET /api/universities/countries/
+        
+        Retorna lista de paises donde hay universidades con convenio.
+        Ordenadas alfabeticamente.
+
+        """
+        countries= list(University.objects.values_list('country', flat=True).distinct().order_by('country'))
+       
+        return Response({'countries': countries})
+    
+    
+
     # ==========================================
     # === MÉTODO PRIVADO DE OPTIMIZACIÓN     ===
     # ==========================================
