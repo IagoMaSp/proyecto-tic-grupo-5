@@ -5,6 +5,8 @@ import Universities from "./pages/Universities";
 import Compare from "./pages/Compare";
 import Reviews from "./pages/Reviews";
 import About from "./pages/About";
+import LogIn from "./pages/LogIn";
+import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 
 const router = createBrowserRouter([
@@ -18,6 +20,8 @@ const router = createBrowserRouter([
       { path: "compare", element: <Compare /> },
       { path: "reviews", element: <Reviews /> },
       { path: "about", element: <About /> },
+      { path: "login", element: <LogIn /> },
+      { path: "register", element: <Register /> },
       { path: "*", element: <NotFound /> },
     ],
   },
