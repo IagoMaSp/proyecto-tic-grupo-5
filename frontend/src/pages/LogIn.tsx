@@ -1,25 +1,36 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/authContext";
 
 export default function LogIn() {
+  const navigate = useNavigate();
+  // 2. Obtener 'login' e 'isAuthenticated' del contexto
+  const { login, isAuthenticated } = useAuth();
+  
   useEffect(() => {
     document.title = "UM Exchange | Iniciar sesión";
-  }, []);
+    
+    // 3. Redirigir si el usuario YA está autenticado
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [navigate, isAuthenticated]); // 4. 'isAuthenticated' es ahora una dependencia
 
   const [formData, setFormData] = useState({
     username: "",
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ username?: string; password?: string; general?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
     // Limpiar error del campo cuando el usuario empieza a escribir
-    if (errors[name as keyof typeof errors]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    if (errors[name as keyof typeof errors] || errors.general) {
+      setErrors((prev) => ({ ...prev, [name]: undefined, general: undefined }));
     }
   };
 
@@ -33,6 +44,7 @@ export default function LogIn() {
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida";
     } else if (formData.password.length < 6) {
+      // Mantenemos la validación original de este formulario
       newErrors.password = "La contraseña debe tener al menos 6 caracteres";
     }
 
@@ -46,13 +58,33 @@ export default function LogIn() {
     if (!validate()) return;
 
     setIsLoading(true);
+    setErrors({});
     
-    // Simulación de llamada a la API
-    setTimeout(() => {
+    try {
+      // 5. Usar la función 'login' del contexto
+      await login(formData.username, formData.password);
+      
+      // 'login' (del contexto) se encarga de llamar a authService Y
+      // de actualizar el estado global (lo que actualizará el Navbar)
+      
+      // Login exitoso - redirigir al home
+      navigate("/");
+      
+      console.log("Login exitoso");
+
+    } catch (error) {
+      console.error("Error en login:", error);
+      
+      // Mostrar el error en el formulario
+      setErrors({
+        general: error instanceof Error 
+          ? error.message 
+          : "Credenciales incorrectas. Por favor, verifica tu usuario y contraseña.",
+      });
+    } finally {
+      // Asegurarse de detener la carga
       setIsLoading(false);
-      // Aquí irá la lógica real de autenticación con el backend
-      console.log("Login attempt:", formData);
-    }, 1500);
+    }
   };
 
   return (
@@ -110,6 +142,18 @@ export default function LogIn() {
             </div>
 
             <form onSubmit={handleSubmit} className="login-form" noValidate>
+              {/* Error general */}
+              {errors.general && (
+                <div className="alert-error">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span>{errors.general}</span>
+                </div>
+              )}
+
               {/* Campo Username */}
               <div className="form-group">
                 <label htmlFor="username" className="form-label">
@@ -125,6 +169,7 @@ export default function LogIn() {
                     className={`form-input ${errors.username ? "error" : ""}`}
                     placeholder="tu_usuario"
                     autoComplete="username"
+                    disabled={isLoading}
                   />
                   <div className="input-icon">
                     <svg
@@ -162,6 +207,7 @@ export default function LogIn() {
                     className={`form-input ${errors.password ? "error" : ""}`}
                     placeholder="••••••••"
                     autoComplete="current-password"
+                    disabled={isLoading}
                   />
                   <div className="input-icon">
                     <svg
@@ -183,6 +229,7 @@ export default function LogIn() {
                     className="toggle-password"
                     onClick={() => setShowPassword(!showPassword)}
                     tabIndex={-1}
+                    disabled={isLoading}
                   >
                     {showPassword ? (
                       <svg
@@ -223,7 +270,7 @@ export default function LogIn() {
               {/* Opciones adicionales */}
               <div className="form-options">
                 <label className="checkbox-label">
-                  <input type="checkbox" className="checkbox" />
+                  <input type="checkbox" className="checkbox" disabled={isLoading} />
                   <span>Recordarme</span>
                 </label>
                 <Link to="/forgot-password" className="link-text">
@@ -260,6 +307,36 @@ export default function LogIn() {
       </div>
 
       <style>{`
+        /* Alerta de error */
+        .alert-error {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          border-radius: 12px;
+          color: #991b1b;
+          font-size: 0.9rem;
+          animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .alert-error svg {
+          flex-shrink: 0;
+        }
+
+        /* Resto de estilos del login... (mantén todos los estilos existentes) */
         .login-container {
           min-height: calc(100vh - 64px);
           display: flex;
@@ -531,6 +608,12 @@ export default function LogIn() {
           outline: none;
         }
 
+        .form-input:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          background: #f9fafb;
+        }
+
         .form-input::placeholder {
           color: #9ca3af;
         }
@@ -579,7 +662,12 @@ export default function LogIn() {
           transition: all 0.2s ease;
         }
 
-        .toggle-password:hover {
+        .toggle-password:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .toggle-password:hover:not(:disabled) {
           color: var(--um-blue-600);
           background: rgba(31, 94, 209, 0.05);
         }
@@ -621,6 +709,11 @@ export default function LogIn() {
           height: 18px;
           cursor: pointer;
           accent-color: var(--um-blue-600);
+        }
+
+        .checkbox:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         .link-text {

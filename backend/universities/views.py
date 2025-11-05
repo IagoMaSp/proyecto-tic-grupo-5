@@ -29,7 +29,7 @@ from .models import University, Review, Profile, Wishlist, Faculty
 from .serializers import (
     UniversitySerializer,
     ReviewSerializer,
-    ProfileSerializer,
+    UserSerializer,
     RegisterSerializer,
     WishlistSerializer,
     UniversityListSerializer,
@@ -55,21 +55,25 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     """
     Endpoint: GET /api/profile/, PUT /api/profile/, PATCH /api/profile/
     Permite a un usuario autenticado ver y actualizar su propio perfil.
+    DEVUELVE EL MODELO USER que coincide con authService.ts
     """
-    queryset = Profile.objects.all()
+    queryset = User.objects.all() # Consultamos User, no Profile
     permission_classes = (IsAuthenticated,)
-    serializer_class = ProfileSerializer
+    serializer_class = UserSerializer # Usamos el nuevo UserSerializer
 
     def get_object(self):
-        """Asegura que solo se devuelva el perfil del usuario logueado."""
-        try:
-            # Devuelve el objeto Profile relacionado al usuario actual
-            return Profile.objects.get(user=self.request.user)
-        except Profile.DoesNotExist:
-            # REFACTOR: Usar 404 es más estándar, pero PermissionDenied
-            # también es aceptable si la lógica es 'no deberías estar aquí'.
-            # Mantenemos PermissionDenied por consistencia con el original.
-            raise PermissionDenied("El perfil no existe para el usuario autenticado.")
+        """Asegura que solo se devuelva el usuario logueado."""
+        # Simplemente devuelve el usuario de la petición
+        return self.request.user
+
+    def get_serializer_context(self):
+        """
+        Pasa el 'request' al contexto para que
+        ProfileNestedSerializer pueda construir URLs absolutas.
+        """
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
 
 # --- Vistas de Modelos (ViewSets) ---
