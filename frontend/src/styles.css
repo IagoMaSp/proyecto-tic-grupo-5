@@ -1349,3 +1349,55 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ====== ESTILOS PARA LOGIN Y NAVBAR ACTUALIZADA ====== */
+
+/* Botón de login en navbar */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.btn-login {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--um-blue-700);
+  color: white;
+  text-decoration: none;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.btn-login:hover {
+  background: var(--um-blue-600);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(31, 94, 209, 0.3);
+}
+
+.btn-login:active {
+  transform: translateY(0);
+}
+
+/* Responsive para navbar con botón login */
+@media (max-width: 768px) {
+  .navbar-inner {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .menu {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .navbar-actions {
+    margin-left: 0;
+  }
+}

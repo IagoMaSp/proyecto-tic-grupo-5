@@ -37,7 +37,7 @@ export default function Universities() {
   useEffect(() => {
     fetchUniversities();
   }, [query, country, faculty, sortBy]);
-
+  
   async function fetchUniversities() {
     setLoading(true);
     setError(null);
