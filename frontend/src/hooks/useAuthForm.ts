@@ -61,6 +61,6 @@ export const useAuthForm = ({ initialValues, validate, onSubmit }: UseAuthFormPr
     isLoading,
     handleChange,
     handleSubmit,
-    setErrors,
+    setErrors, // Exportar setErrors por si se necesita
   };
 };

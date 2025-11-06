@@ -20,7 +20,7 @@ export default function RatingSlider({ label, id, value, onChange }: RatingSlide
         name={id}
         min="0"
         max="5"
-        step="0.1"
+        step="0.5"
         value={value}
         onChange={onChange}
       />

@@ -1,18 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
-// Tipos
-type University = {
-  id: number;
-  name: string;
-  country: string;
-  qs_rating_top: number;
-  qs_rating_bottom: number;
-  web_pages: string;
-  status: string;
-  continent: "Africa" | "America" | "Asia" | "Europe" | "Oceania";
-  visits_count: number;
-};
+import * as api from "../api"; // Importar todo como api
+import type { University } from "../api"; // Importar el tipo
 
 type SortOption = "qs_rating_top" | "-qs_rating_top" | "-overall_avg_rating" | "-visits_count";
 
@@ -26,7 +15,7 @@ export default function Universities() {
   const [faculty, setFaculty] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("qs_rating_top");
   const [universities, setUniversities] = useState<University[]>([]);
-  const [countries, setCountries] = useState<string[]>([]); // ← NUEVO
+  const [countries, setCountries] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,22 +32,11 @@ export default function Universities() {
   
   async function fetchCountries() {
     try {
-      const res = await fetch("http://localhost:8000/api/universities/countries/", {
-        headers: { 
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error("No se pudieron cargar los países");
-      }
-
-      const data = await res.json();
+      // MODIFICACIÓN: Usar el endpoint de la api.ts
+      const data = await api.getFilterOptions(); 
       setCountries(data.countries || []);
     } catch (err) {
       console.error("Error cargando países:", err);
-      // Fallback a lista vacía (o podrías usar la constante hardcodeada)
       setCountries([]);
     }
   }
@@ -68,43 +46,21 @@ export default function Universities() {
     setError(null);
     
     try {
-      const params = new URLSearchParams();
-      
-      if (query) params.append("search", query);
-      if (country) params.append("country", country);
-      if (faculty) params.append("faculties", faculty);
-      if (sortBy) params.append("ordering", sortBy);
+      // MODIFICACIÓN: Crear el objeto de filtros
+      type ExtendedFilters = api.UniversityFilters & { faculty?: string };
+      const filters: ExtendedFilters = {
+        search: query || undefined,
+        country: country || undefined,
+        faculty: faculty || undefined,
+        ordering: sortBy
+      };
 
-      const res = await fetch(`http://localhost:8000/api/universities/?${params.toString()}`, {
-        headers: { 
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
+      // MODIFICACIÓN: Usar la función de api.ts
+      const data = await api.getUniversities(filters);
 
-      if (!res.ok) {
-        throw new Error(`Error ${res.status}: No se pudieron cargar las universidades`);
-      }
+      // MODIFICACIÓN: El backend devuelve un objeto { results: [...] }
+      setUniversities(data.results || []);
 
-      const data = await res.json();
-      
-      // Manejar respuesta paginada o array directo
-      let universities: University[];
-      
-      if (Array.isArray(data)) {
-        // Respuesta directa (array)
-        universities = data;
-      } else if (data && Array.isArray(data.results)) {
-        // Respuesta paginada (con results)
-        universities = data.results;
-      } else {
-        console.error("El backend no devolvió un formato válido:", data);
-        setError("Formato de respuesta incorrecto del backend");
-        setUniversities([]);
-        return;
-      }
-      
-      setUniversities(universities);
     } catch (err) {
       console.error("Error cargando universidades:", err);
       setError(err instanceof Error ? err.message : "Error al cargar universidades");
@@ -129,7 +85,7 @@ export default function Universities() {
         <div className="mb-32">
           <h1 className="section-title">Universidades con convenio</h1>
           <p className="section-sub">
-            Explorá {universities.length} universidades. Filtrá por país, facultad o ranking QS para encontrar tu destino ideal.
+            Explorá {loading ? "..." : universities.length} universidades. Filtrá por país, facultad o ranking QS para encontrar tu destino ideal.
           </p>
         </div>
 
@@ -194,8 +150,8 @@ export default function Universities() {
                 <label className="filter-section-label">Ordenar por</label>
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)} className="filter-select" style={{ maxWidth: "400px" }}>
                   <optgroup label="Ranking QS">
-                    <option value="-qs_rating_top">QS: Descendente</option>
                     <option value="qs_rating_top">QS: Ascendente (menor número = mejor)</option>
+                    <option value="-qs_rating_top">QS: Descendente</option>
                   </optgroup>
                   <optgroup label="Valoración de alumnos">
                     <option value="-overall_avg_rating">Mejor valoradas por alumnos</option>
@@ -301,12 +257,6 @@ function UniversityCard({ university, index }: { university: University; index: 
             {university.qs_rating_bottom !== university.qs_rating_top && ` - ${university.qs_rating_bottom}`}
           </span>
         </div>
-        {university.visits_count > 0 && (
-          <div className="uni-stat">
-            <span className="uni-stat-label">Visitas</span>
-            <span className="uni-stat-value">{university.visits_count}</span>
-          </div>
-        )}
       </div>
     </Link>
   );
