@@ -7,7 +7,7 @@ const NAV_LINKS = [
   { path: "/", label: "Inicio", end: true },
   { path: "/universities", label: "Universidades" },
   { path: "/compare", label: "Comparar" },
-  { path: "/reviews", label: "Reviews" },
+  { path: "/reviews", label: "Reseñas" },
   { path: "/about", label: "Sobre el proyecto" },
 ];
 
