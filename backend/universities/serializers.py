@@ -62,7 +62,7 @@ class UniversityListSerializer(serializers.ModelSerializer):
             'qs_rating_bottom',
             'review_count', 
             'overall_avg_rating',
-            'faculties',
+            # 'faculties', # Quitado para aligerar la respuesta de lista
             'review_count',
             'overall_avg_rating'
         ]
@@ -213,7 +213,8 @@ class ReviewSerializer(serializers.ModelSerializer):
         Retorna URL de la foto de perfil del usuario.
         Útil para mostrar avatar junto a la review en el frontend.
         """
-        if not obj.user.profile.profile_photo:
+        # MODIFICACIÓN: Asegurarse de que obj.user.profile exista
+        if not hasattr(obj.user, 'profile') or not obj.user.profile.profile_photo:
             return None
         
         request = self.context.get('request')
@@ -333,7 +334,6 @@ class UserSerializer(serializers.ModelSerializer):
     Serializador principal para el modelo User.
     Este es el formato que espera tu frontend (authContext.tsx).
     """
-    # CORRECCIÓN: Se eliminó 'source="profile"' porque es redundante
     profile = ProfileNestedSerializer(read_only=True)
 
     class Meta:
@@ -346,7 +346,6 @@ class RegisterSerializer(serializers.ModelSerializer):
     Serializador para el registro (creación) de nuevos usuarios (modelo User).
     Optimizado para devolver el UserSerializer completo al crear.
     """
-    # CORRECCIÓN: Se eliminó 'source="profile"' porque es redundante
     profile = ProfileNestedSerializer(read_only=True)
     password = serializers.CharField(write_only=True, required=True)
     
@@ -389,8 +388,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             password=validated_data['password']
         )
-        # La señal post_save creará el Profile.
-        # 'user' ahora tiene 'user.profile' disponible.
         return user
 
 
@@ -408,7 +405,7 @@ class WishlistSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wishlist
         fields = ['id', 'user', 'university', 'university_detail', 'created_at', 'updated_at']
-        read_only_fields = ['user', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'created_at', 'updated_at', 'university_detail']
 
 
 class WishlistCreateSerializer(serializers.ModelSerializer):
