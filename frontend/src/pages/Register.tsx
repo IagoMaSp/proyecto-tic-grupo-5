@@ -1,223 +1,97 @@
+// frontend/src/pages/Register.tsx (SIMPLIFICADO)
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-// 1. Importar el servicio de autenticación
-import { authService } from "../services/authService";
-// 2. ¡AÑADIR LA IMPORTACIÓN DE useAuth!
 import { useAuth } from "../contexts/authContext";
+import { useAuthForm } from "../hooks/useAuthForm";
+import { validateRegister, calculatePasswordStrength, getPasswordStrengthLabel } from "../services/auth/authValidation";
+import AuthBranding from "../components/auth/AuthBranding";
+import FormField from "../components/auth/FormField";
 
 export default function Register() {
   const navigate = useNavigate();
-  // 3. OBTENER LA FUNCIÓN 'login' DEL CONTEXTO
   const { login } = useAuth();
+  const [passwordStrength, setPasswordStrength] = useState(0);
   
   useEffect(() => {
     document.title = "UM Exchange | Registrarse";
   }, []);
 
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    acceptTerms: false,
-  });
-  
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // 2. Añadir 'general' para errores de API
-  const [errors, setErrors] = useState<{
-    username?: string;
-    email?: string;
-    password?: string;
-    confirmPassword?: string;
-    acceptTerms?: string;
-    general?: string; 
-  }>({});
-  
-  const [isLoading, setIsLoading] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
-  
-  // 3. Añadir estado para mensaje de éxito (lo quitaremos del submit)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    const newValue = type === "checkbox" ? checked : value;
-    
-    setFormData((prev) => ({ ...prev, [name]: newValue }));
-    
-    // Limpiar errores
-    if (errors[name as keyof typeof errors] || errors.general) {
-      setErrors((prev) => ({ 
-        ...prev, 
-        [name]: undefined, 
-        general: undefined 
-      }));
-    }
-
-    if (name === "password") {
-      calculatePasswordStrength(value);
-    }
-  };
-
-  const calculatePasswordStrength = (password: string) => {
-    let strength = 0;
-    if (password.length >= 8) strength++;
-    if (password.length >= 12) strength++;
-    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-    if (/\d/.test(password)) strength++;
-    if (/[^a-zA-Z0-9]/.test(password)) strength++;
-    setPasswordStrength(Math.min(strength, 4));
-  };
-
-  const getPasswordStrengthLabel = () => {
-    if (passwordStrength === 0) return { text: "", color: "" };
-    if (passwordStrength === 1) return { text: "Muy débil", color: "#ef4444" };
-    if (passwordStrength === 2) return { text: "Débil", color: "#f97316" };
-    if (passwordStrength === 3) return { text: "Buena", color: "#eab308" };
-    return { text: "Fuerte", color: "#22c55e" };
-  };
-
-  const validate = () => {
-    const newErrors: typeof errors = {};
-    
-    if (!formData.username.trim()) {
-      newErrors.username = "El nombre de usuario es requerido";
-    } else if (formData.username.length < 3) {
-      newErrors.username = "Debe tener al menos 3 caracteres";
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username = "Solo letras, números y guion bajo";
-    }
-    
-    if (!formData.email.trim()) {
-      newErrors.email = "El email es requerido";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Email inválido";
-    }
-    
-    if (!formData.password) {
-      newErrors.password = "La contraseña es requerida";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Debe tener al menos 8 caracteres";
-    }
-    
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Confirmá tu contraseña";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Las contraseñas no coinciden";
-    }
-    
-    if (!formData.acceptTerms) {
-      newErrors.acceptTerms = "Debes aceptar los términos y condiciones";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // 4. handleSubmit con la lógica de auto-login
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({});
-    setSuccessMessage(null); // Limpiar mensajes
-    
-    if (!validate()) return;
-
-    setIsLoading(true);
-    
-    try {
-      // Paso 1: Registrar el usuario
-      await authService.register({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        password_confirm: formData.confirmPassword, 
+  const {
+    formData,
+    errors,
+    isLoading,
+    handleChange: baseHandleChange,
+    handleSubmit,
+  } = useAuthForm({
+    initialValues: {
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      acceptTerms: false,
+    },
+    validate: validateRegister,
+    onSubmit: async (data) => {
+      // 1. Registrar
+      const response = await fetch('/api/register/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: data.username,
+          email: data.email,
+          password: data.password,
+          password_confirm: data.confirmPassword,
+        }),
       });
 
-      // Paso 2: Iniciar sesión automáticamente si el registro fue exitoso
-      await login(formData.username, formData.password);
+      if (!response.ok) {
+        const error = await response.json();
+        if (error.username) throw new Error(`Usuario: ${error.username[0]}`);
+        if (error.email) throw new Error(`Email: ${error.email[0]}`);
+        if (error.password) throw new Error(`Contraseña: ${error.password[0]}`);
+        throw new Error(Object.values(error).flat().join(' ') || 'Error al registrarse');
+      }
+
+      // 2. Auto-login
+      await login(data.username, data.password);
       
-      // Paso 3: Redirigir al Home (el Navbar ya estará actualizado)
+      // 3. Redirigir
       navigate("/");
+    },
+  });
 
-    } catch (error) {
-      // Manejar errores (ya sea de registro o de inicio de sesión)
-      console.error("Error en registro/login:", error);
-      setErrors({
-        general: error instanceof Error 
-          ? error.message 
-          : "Ocurrió un error inesperado.",
-      });
-    } finally {
-      // Detener la carga en cualquier caso (éxito o error)
-      setIsLoading(false);
+  // Extender handleChange para calcular fuerza de contraseña
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    baseHandleChange(e);
+    if (e.target.name === "password") {
+      setPasswordStrength(calculatePasswordStrength(e.target.value));
     }
   };
 
-  const strengthBar = getPasswordStrengthLabel();
+  const strengthBar = getPasswordStrengthLabel(passwordStrength);
 
   return (
-    <section className="register-container">
-      <div className="register-wrapper">
-        <div className="register-brand">
-          <div className="brand-content">
-            <div className="brand-logo">
-              <div className="logo-circle">
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="8.5" cy="7" r="4" />
-                  <line x1="20" y1="8" x2="20" y2="14" />
-                  <line x1="23" y1="11" x2="17" y2="11" />
-                </svg>
-              </div>
-            </div>
-            <h2 className="brand-title">Unite a UM Exchange</h2>
-            <p className="brand-desc">
-              Creá tu cuenta y empezá a explorar las mejores universidades 
-              para tu intercambio.
-            </p>
-            
-            <div className="brand-features">
-              <div className="feature-item">
-                <div className="feature-icon">✓</div>
-                <div className="feature-text">Acceso a todas las universidades</div>
-              </div>
-              <div className="feature-item">
-                <div className="feature-icon">✓</div>
-                <div className="feature-text">Compará hasta 3 destinos</div>
-              </div>
-              <div className="feature-item">
-                <div className="feature-icon">✓</div>
-                <div className="feature-text">Leé y dejá reviews verificadas</div>
-              </div>
-              <div className="feature-item">
-                <div className="feature-icon">✓</div>
-                <div className="feature-text">Guardá tus favoritas en wishlist</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="register-form-section">
+    <section className="auth-container">
+      <div className="auth-wrapper">
+        <AuthBranding
+          title="Unite a UM Exchange"
+          description="Creá tu cuenta y empezá a explorar las mejores universidades para tu intercambio."
+          features={[
+            { icon: "✓", text: "Acceso a todas las universidades" },
+            { icon: "✓", text: "Compará hasta 3 destinos" },
+            { icon: "✓", text: "Leé y dejá reviews verificadas" },
+            { icon: "✓", text: "Guardá tus favoritas en wishlist" },
+          ]}
+        />
+        
+        <div className="auth-form-section">
           <div className="form-container">
             <div className="form-header">
               <h1 className="form-title">Crear cuenta</h1>
               <p className="form-subtitle">Completá tus datos para registrarte</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="register-form" noValidate>
-              
-              {/* 5. Mostrar errores generales de API */}
+            <form onSubmit={handleSubmit} className="auth-form" noValidate>
               {errors.general && (
                 <div className="alert-error">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -228,142 +102,64 @@ export default function Register() {
                   <span>{errors.general}</span>
                 </div>
               )}
-              
-              {/* 6. Mostrar mensaje de éxito */}
-              {successMessage && (
-                <div className="alert-success">
-                  <span>{successMessage}</span>
-                </div>
-              )}
 
-              {/* Username */}
-              <div className="form-group">
-                <label htmlFor="username" className="form-label">
-                  Nombre de usuario
-                </label>
-                <div className="input-wrapper">
-                  <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    className={`form-input ${errors.username ? "error" : ""}`}
-                    placeholder="tu_usuario"
-                    autoComplete="username"
-                    disabled={isLoading}
-                  />
-                  <div className="input-icon">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                  </div>
-                </div>
-                {errors.username && (
-                  <span className="error-message">{errors.username}</span>
-                )}
-              </div>
+              <FormField
+                label="Nombre de usuario"
+                id="username"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                error={errors.username}
+                placeholder="tu_usuario"
+                autoComplete="username"
+                disabled={isLoading}
+                icon={
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                }
+              />
 
-              {/* Email */}
-              <div className="form-group">
-                <label htmlFor="email" className="form-label">
-                  Email
-                </label>
-                <div className="input-wrapper">
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={`form-input ${errors.email ? "error" : ""}`}
-                    placeholder="tu@email.com"
-                    autoComplete="email"
-                    disabled={isLoading}
-                  />
-                  <div className="input-icon">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                      <polyline points="22,6 12,13 2,6" />
-                    </svg>
-                  </div>
-                </div>
-                {errors.email && (
-                  <span className="error-message">{errors.email}</span>
-                )}
-              </div>
+              <FormField
+                label="Email"
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email || ""}
+                onChange={handleChange}
+                error={errors.email}
+                placeholder="tu@email.com"
+                autoComplete="email"
+                disabled={isLoading}
+                icon={
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                }
+              />
 
-              {/* Password */}
               <div className="form-group">
-                <label htmlFor="password" className="form-label">
-                  Contraseña
-                </label>
-                <div className="input-wrapper">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className={`form-input ${errors.password ? "error" : ""}`}
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    disabled={isLoading}
-                  />
-                  <div className="input-icon">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
+                <FormField
+                  label="Contraseña"
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  error={errors.password}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  disabled={isLoading}
+                  showPasswordToggle
+                  icon={
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                     </svg>
-                  </div>
-                  <button
-                    type="button"
-                    className="toggle-password"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
-                    disabled={isLoading}
-                  >
-                    {showPassword ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
+                  }
+                />
                 
                 {formData.password && (
                   <div className="password-strength">
@@ -385,75 +181,33 @@ export default function Register() {
                     )}
                   </div>
                 )}
-                
-                {errors.password && (
-                  <span className="error-message">{errors.password}</span>
-                )}
               </div>
 
-              {/* Confirm Password */}
-              <div className="form-group">
-                <label htmlFor="confirmPassword" className="form-label">
-                  Confirmar contraseña
-                </label>
-                <div className="input-wrapper">
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className={`form-input ${errors.confirmPassword ? "error" : ""}`}
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    disabled={isLoading}
-                  />
-                  <div className="input-icon">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    </svg>
-                  </div>
-                  <button
-                    type="button"
-                    className="toggle-password"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    tabIndex={-1}
-                    disabled={isLoading}
-                  >
-                    {showConfirmPassword ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <span className="error-message">{errors.confirmPassword}</span>
-                )}
-              </div>
+              <FormField
+                label="Confirmar contraseña"
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword || ""}
+                onChange={handleChange}
+                error={errors.confirmPassword}
+                placeholder="••••••••"
+                autoComplete="new-password"
+                disabled={isLoading}
+                showPasswordToggle
+                icon={
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                }
+              />
 
-              {/* Terms and Conditions */}
               <div className="form-group">
                 <label className="terms-label">
                   <input
                     type="checkbox"
                     name="acceptTerms"
-                    checked={formData.acceptTerms}
+                    checked={formData.acceptTerms || false}
                     onChange={handleChange}
                     className={`terms-checkbox ${errors.acceptTerms ? "error" : ""}`}
                     disabled={isLoading}
@@ -474,12 +228,7 @@ export default function Register() {
                 )}
               </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                className="submit-button"
-                disabled={isLoading}
-              >
+              <button type="submit" className="submit-button" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <span className="spinner" />
@@ -488,16 +237,7 @@ export default function Register() {
                 ) : (
                   <>
                     Crear cuenta
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <line x1="5" y1="12" x2="19" y2="12" />
                       <polyline points="12 5 19 12 12 19" />
                     </svg>
@@ -505,7 +245,6 @@ export default function Register() {
                 )}
               </button>
 
-              {/* Login Link */}
               <div className="form-footer">
                 <span className="footer-text">¿Ya tenés cuenta?</span>
                 <Link to="/login" className="link-text strong">
@@ -516,548 +255,6 @@ export default function Register() {
           </div>
         </div>
       </div>
-
-      <style>{`
-        /* Alerta de error */
-        .alert-error {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 14px 16px;
-          background: #fef2f2;
-          border: 1px solid #fecaca;
-          border-radius: 12px;
-          color: #991b1b;
-          font-size: 0.9rem;
-          animation: slideDown 0.3s ease-out;
-        }
-
-        /* Alerta de éxito */
-        .alert-success {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 14px 16px;
-          background: #f0fdf4;
-          border: 1px solid #bbf7d0;
-          border-radius: 12px;
-          color: #166534;
-          font-size: 0.9rem;
-          animation: slideDown 0.3s ease-out;
-        }
-
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .form-input:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-          background: #f9fafb;
-        }
-        
-        .toggle-password:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        
-        .terms-checkbox:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .register-container {
-          min-height: calc(100vh - 64px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 40px 24px;
-          background: linear-gradient(135deg, #eef4ff 0%, #f7fbff 100%);
-          position: relative;
-          overflow: hidden;
-        }
-        .register-container::before {
-          content: "";
-          position: absolute;
-          top: -50%;
-          right: -50%;
-          width: 200%;
-          height: 200%;
-          background: 
-            radial-gradient(circle at 80% 20%, rgba(31, 94, 209, 0.08) 0%, transparent 50%),
-            radial-gradient(circle at 20% 80%, rgba(24, 74, 166, 0.06) 0%, transparent 50%);
-          animation: gradientShift 25s ease infinite;
-        }
-        @keyframes gradientShift {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          50% { transform: translate(-5%, -5%) rotate(180deg); }
-        }
-        .register-wrapper {
-          position: relative;
-          z-index: 1;
-          max-width: 1100px;
-          width: 100%;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          background: white;
-          border-radius: 24px;
-          overflow: hidden;
-          box-shadow: 
-            0 20px 60px rgba(10, 42, 106, 0.12),
-            0 0 0 1px rgba(24, 74, 166, 0.08);
-          animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(40px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .register-brand {
-          background: linear-gradient(180deg, var(--um-blue-700) 0%, var(--um-blue-900) 100%);
-          padding: 60px 50px;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          position: relative;
-          overflow: hidden;
-        }
-        .register-brand::before {
-          content: "";
-          position: absolute;
-          top: -80px;
-          right: -80px;
-          width: 280px;
-          height: 280px;
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 50%;
-          animation: float 10s ease-in-out infinite;
-        }
-        .register-brand::after {
-          content: "";
-          position: absolute;
-          bottom: -100px;
-          left: -100px;
-          width: 300px;
-          height: 300px;
-          background: rgba(255, 255, 255, 0.03);
-          border-radius: 50%;
-          animation: float 12s ease-in-out infinite reverse;
-        }
-        @keyframes float {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(15px, 15px); }
-        }
-        .brand-content {
-          position: relative;
-          z-index: 1;
-          animation: fadeInLeft 0.8s ease-out 0.2s backwards;
-        }
-        @keyframes fadeInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        .brand-logo {
-          margin-bottom: 24px;
-        }
-        .logo-circle {
-          width: 72px;
-          height: 72px;
-          background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(10px);
-          border-radius: 18px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          animation: pulse 3s ease-in-out infinite;
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-        .brand-title {
-          font-size: 32px;
-          font-weight: 900;
-          color: white;
-          margin: 0 0 16px;
-          letter-spacing: 0.3px;
-        }
-        .brand-desc {
-          font-size: 16px;
-          line-height: 1.6;
-          color: rgba(255, 255, 255, 0.85);
-          margin: 0 0 40px;
-        }
-        .brand-features {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        .feature-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          animation: slideInLeft 0.5s ease-out backwards;
-        }
-        .feature-item:nth-child(1) { animation-delay: 0.4s; }
-        .feature-item:nth-child(2) { animation-delay: 0.5s; }
-        .feature-item:nth-child(3) { animation-delay: 0.6s; }
-        .feature-item:nth-child(4) { animation-delay: 0.7s; }
-        @keyframes slideInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        .feature-icon {
-          width: 28px;
-          height: 28px;
-          background: rgba(255, 255, 255, 0.2);
-          backdrop-filter: blur(5px);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: 700;
-          font-size: 14px;
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          flex-shrink: 0;
-        }
-        .feature-text {
-          color: rgba(255, 255, 255, 0.9);
-          font-size: 14px;
-          font-weight: 500;
-          line-height: 1.4;
-        }
-        .register-form-section {
-          padding: 50px 50px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .form-container {
-          width: 100%;
-          max-width: 420px;
-          animation: fadeInRight 0.8s ease-out 0.3s backwards;
-        }
-        @keyframes fadeInRight {
-          from {
-            opacity: 0;
-            transform: translateX(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        .form-header {
-          margin-bottom: 28px;
-        }
-        .form-title {
-          font-size: 28px;
-          font-weight: 900;
-          color: var(--um-blue-900);
-          margin: 0 0 8px;
-        }
-        .form-subtitle {
-          font-size: 15px;
-          color: var(--muted);
-          margin: 0;
-        }
-        .register-form {
-          display: flex;
-          flex-direction: column;
-          gap: 18px;
-        }
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .form-label {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--ink);
-          margin-bottom: 4px;
-        }
-        .input-wrapper {
-          position: relative;
-        }
-        .form-input {
-          width: 100%;
-          height: 48px;
-          padding: 0 44px 0 44px;
-          border: 1.5px solid #e5e7eb;
-          border-radius: 12px;
-          font-size: 15px;
-          color: var(--ink);
-          background: white;
-          transition: all 0.2s ease;
-          outline: none;
-        }
-        .form-input::placeholder {
-          color: #9ca3af;
-        }
-        .form-input:focus {
-          border-color: var(--um-blue-600);
-          box-shadow: 0 0 0 4px rgba(31, 94, 209, 0.08);
-        }
-        .form-input.error {
-          border-color: #ef4444;
-        }
-        .form-input.error:focus {
-          box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.08);
-        }
-        .input-icon {
-          position: absolute;
-          left: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #9ca3af;
-          pointer-events: none;
-          transition: color 0.2s ease;
-        }
-        .form-input:focus + .input-icon {
-          color: var(--um-blue-600);
-        }
-        .toggle-password {
-          position: absolute;
-          right: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          padding: 6px;
-          color: #9ca3af;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 6px;
-          transition: all 0.2s ease;
-        }
-        .toggle-password:hover {
-          color: var(--um-blue-600);
-          background: rgba(31, 94, 209, 0.05);
-        }
-        .error-message {
-          font-size: 13px;
-          color: #ef4444;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          animation: shake 0.4s ease;
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-4px); }
-          75% { transform: translateX(4px); }
-        }
-        .password-strength {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-top: 8px;
-        }
-        .strength-bar-container {
-          flex: 1;
-          display: flex;
-          gap: 4px;
-          height: 4px;
-        }
-        .strength-bar {
-          flex: 1;
-          background: #e5e7eb;
-          border-radius: 2px;
-          transition: all 0.3s ease;
-        }
-        .strength-bar.active {
-          animation: growBar 0.3s ease;
-        }
-        @keyframes growBar {
-          from {
-            transform: scaleX(0);
-          }
-          to {
-            transform: scaleX(1);
-          }
-        }
-        .strength-label {
-          font-size: 12px;
-          font-weight: 600;
-          min-width: 70px;
-        }
-        .terms-label {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          cursor: pointer;
-          user-select: none;
-          padding: 12px;
-          border-radius: 10px;
-          transition: background 0.2s ease;
-        }
-        .terms-label:hover {
-          background: rgba(31, 94, 209, 0.03);
-        }
-        .terms-checkbox {
-          width: 20px;
-          height: 20px;
-          cursor: pointer;
-          accent-color: var(--um-blue-600);
-          margin-top: 2px;
-          flex-shrink: 0;
-        }
-        .terms-checkbox.error {
-          outline: 2px solid #ef4444;
-          outline-offset: 2px;
-          border-radius: 4px;
-        }
-        .terms-text {
-          font-size: 14px;
-          color: var(--muted);
-          line-height: 1.5;
-        }
-        .terms-link {
-          color: var(--um-blue-700);
-          text-decoration: none;
-          font-weight: 600;
-          transition: color 0.2s ease;
-        }
-        .terms-link:hover {
-          color: var(--um-blue-600);
-          text-decoration: underline;
-        }
-        .submit-button {
-          width: 100%;
-          height: 48px;
-          background: var(--um-blue-700);
-          color: white;
-          border: none;
-          border-radius: 12px;
-          font-size: 15px;
-          font-weight: 700;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          transition: all 0.2s ease;
-          margin-top: 8px;
-        }
-        .submit-button:hover:not(:disabled) {
-          background: var(--um-blue-600);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(31, 94, 209, 0.3);
-        }
-        .submit-button:active:not(:disabled) {
-          transform: translateY(0);
-        }
-        .submit-button:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-        .spinner {
-          width: 18px;
-          height: 18px;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-top-color: white;
-          border-radius: 50%;
-          animation: spin 0.6s linear infinite;
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        .form-footer {
-          text-align: center;
-          padding-top: 20px;
-          border-top: 1px solid #e5e7eb;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-        }
-        .footer-text {
-          font-size: 14px;
-          color: var(--muted);
-        }
-        .link-text {
-          font-size: 14px;
-          color: var(--um-blue-700);
-          text-decoration: none;
-          font-weight: 600;
-          transition: color 0.2s ease;
-        }
-        .link-text:hover {
-          color: var(--um-blue-600);
-          text-decoration: underline;
-        }
-        .link-text.strong {
-          font-weight: 700;
-        }
-        @media (max-width: 1024px) {
-          .register-wrapper {
-            grid-template-columns: 1fr;
-          }
-          .register-brand {
-            padding: 40px 30px;
-          }
-          .register-form-section {
-            padding: 40px 30px;
-            max-height: none;
-          }
-        }
-        @media (max-width: 480px) {
-          .register-container {
-            padding: 20px 16px;
-          }
-          .register-wrapper {
-            border-radius: 16px;
-          }
-          .register-brand {
-            padding: 30px 24px;
-          }
-          .register-form-section {
-            padding: 30px 24px;
-          }
-          .form-title {
-            font-size: 24px;
-          }
-          .brand-title {
-            font-size: 26px;
-          }
-          .form-input {
-            height: 44px;
-          }
-          .submit-button {
-            height: 44px;
-          }
-        }
-      `}</style>
     </section>
   );
 }
