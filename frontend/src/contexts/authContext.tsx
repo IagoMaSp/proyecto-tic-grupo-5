@@ -1,7 +1,7 @@
 // frontend/src/contexts/AuthContext.tsx
 import { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
-import { authService } from "../services/authService";
+import { authService } from "../services/auth/authService";
 
 interface User {
   id: number;

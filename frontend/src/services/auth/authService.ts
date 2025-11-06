@@ -1,36 +1,9 @@
-interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
-interface LoginResponse {
-  access: string;
-  refresh: string;
-}
-
-// 1. ACTUALIZACIÓN: Añadir 'password_confirm'
-interface RegisterData {
-  username: string;
-  email: string;
-  password: string;
-  password_confirm: string; 
-}
-
-interface UserProfile {
-  id: number;
-  username: string;
-  email: string;
-  profile: {
-    id: number;
-    profile_photo: string | null;
-    profile_photo_url: string | null;
-  };
-}
+// frontend/src/services/authService.ts (SIMPLIFICADO)
+import type { LoginCredentials, LoginResponse, UserProfile } from './authTypes';
 
 class AuthService {
   private baseURL = '/api';
 
-  // ... (login sin cambios) ...
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     const response = await fetch(`${this.baseURL}/token/`, {
       method: 'POST',
@@ -53,37 +26,6 @@ class AuthService {
     return data;
   }
 
-  // 2. ACTUALIZACIÓN: El 'body' ahora envía todos los campos
-  async register(userData: RegisterData): Promise<UserProfile> {
-    const response = await fetch(`${this.baseURL}/register/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData), // userData ahora incluye password_confirm
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      // Manejar errores de validación
-      if (error.username) {
-        throw new Error(`Usuario: ${error.username[0]}`);
-      }
-      if (error.email) {
-        throw new Error(`Email: ${error.email[0]}`);
-      }
-      if (error.password) {
-        throw new Error(`Contraseña: ${error.password[0]}`);
-      }
-      // Error genérico
-      const detail = Object.values(error).flat().join(' ');
-      throw new Error(detail || 'Error al registrarse');
-    }
-
-    return response.json();
-  }
-
-  // ... (el resto del archivo authService.ts sin cambios) ...
   logout(): void {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
