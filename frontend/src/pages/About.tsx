@@ -62,12 +62,11 @@ export default function About() {
             <strong>UM Exchange</strong> es una iniciativa estudiantil y{" "}
             <strong>no es un sitio web oficial</strong> de la Universidad de
             Montevideo. La información sobre convenios y universidades se
-File Generation
-recopiló manualmente y podría no estar 100% actualizada o completa.
+            recopiló manualmente y podría no estar 100% actualizada o completa.
           </p>
           <p>
             Para consultar la información oficial, verificar los convenios
-            vigentes y realizar tu postulación, debés dirigirte siempre al
+            vigentes y/o realizar tu postulación, debés dirigirte siempre al
             portal oficial.
           </p>
           <a
@@ -76,117 +75,11 @@ recopiló manualmente y podría no estar 100% actualizada o completa.
             rel="noopener noreferrer"
             className="btn primary"
           >
-            <span>Ir al Portal de Internacionales UM</span>
+            <span>Ir al Portal oficial de la UM</span>
             <span className="btn-arrow">→</span>
           </a>
         </div>
       </div>
-
-      <style>{`
-        .about-page-card {
-          max-width: 900px;
-          margin: 0 auto;
-        }
-        
-        .about-content {
-          margin-top: 32px;
-        }
-
-        .content-block {
-          margin-bottom: 32px;
-        }
-
-        .about-title-small {
-          font-size: 1.5rem;
-          font-weight: 800;
-          color: var(--um-blue-900);
-          margin-bottom: 12px;
-          border-bottom: 2px solid var(--um-blue-100);
-          padding-bottom: 8px;
-        }
-
-        .content-block p {
-          font-size: 1rem;
-          color: var(--ink-light);
-          line-height: 1.7;
-          margin-bottom: 16px;
-        }
-
-        .content-block p strong {
-          color: var(--ink);
-        }
-
-        .feature-list-about {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-          display: grid;
-          gap: 16px;
-          grid-template-columns: 1fr;
-        }
-
-        @media (min-width: 640px) {
-          .feature-list-about {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-
-        .feature-list-about li {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 0.95rem;
-          color: var(--ink-light);
-        }
-        
-        .feature-list-about li svg {
-          flex-shrink: 0;
-          color: var(--um-blue-600);
-        }
-        
-        .feature-list-about li strong {
-          color: var(--ink);
-        }
-
-        .disclaimer-box {
-          background: var(--gray-50);
-          border: 1px solid var(--border);
-          border-radius: 16px;
-          padding: 24px;
-          margin-top: 24px;
-        }
-        
-        .disclaimer-box h3 {
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: var(--um-blue-900);
-          margin-bottom: 12px;
-        }
-
-        .disclaimer-box p {
-          font-size: 0.95rem;
-          color: var(--muted);
-          line-height: 1.6;
-          margin-bottom: 16px;
-        }
-        
-        .disclaimer-box p strong {
-          color: var(--ink);
-        }
-
-        .disclaimer-box .btn {
-          margin-top: 8px;
-        }
-
-        .disclaimer-box .btn-arrow {
-          display: inline-block;
-          transition: transform var(--transition-base);
-        }
-
-        .disclaimer-box .btn:hover .btn-arrow {
-          transform: translateX(4px);
-        }
-      `}</style>
     </section>
   );
 }
