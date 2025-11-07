@@ -1,0 +1,95 @@
+/* ====== CAROUSEL - Mejorado ====== */
+.carousel {
+  position: relative;
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+}
+
+.carousel .track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+
+.carousel .track::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel .slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  position: relative;
+}
+
+.carousel .slide img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+  display: block;
+}
+
+.carousel .ctrl {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  color: var(--um-blue-700);
+  font-size: 1.8rem;
+  font-weight: 300;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+  z-index: 2;
+  box-shadow: var(--shadow-md);
+}
+
+.carousel .ctrl:hover {
+  background: var(--white);
+  transform: translateY(-50%) scale(1.1);
+  color: var(--um-blue-600);
+  box-shadow: var(--shadow-lg);
+}
+
+.carousel .ctrl.left {
+  left: 16px;
+}
+
+.carousel .ctrl.right {
+  right: 16px;
+}
+
+.carousel .dots {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.carousel .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  transition: all var(--transition-base);
+}
+
+.carousel .dot.active {
+  background: var(--white);
+  width: 24px;
+}

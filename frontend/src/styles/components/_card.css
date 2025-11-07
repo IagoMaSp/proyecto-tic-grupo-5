@@ -1,0 +1,15 @@
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+  animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--um-blue-100);
+  transform: translateY(-2px);
+}

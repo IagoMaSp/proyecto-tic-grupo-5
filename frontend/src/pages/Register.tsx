@@ -1,4 +1,3 @@
-// frontend/src/pages/Register.tsx (SIMPLIFICADO)
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/authContext";
@@ -6,16 +5,15 @@ import { useAuthForm } from "../hooks/useAuthForm";
 import { validateRegister, calculatePasswordStrength, getPasswordStrengthLabel } from "../services/auth/authValidation";
 import AuthBranding from "../components/auth/AuthBranding";
 import FormField from "../components/auth/FormField";
-import * as api from "../api"; // Importar api
+import * as api from "../api";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth(); // Añadir isAuthenticated
+  const { login, isAuthenticated } = useAuth();
   const [passwordStrength, setPasswordStrength] = useState(0);
   
   useEffect(() => {
     document.title = "UM Exchange | Registrarse";
-    // Redirigir si ya está logueado
     if (isAuthenticated) {
       navigate("/");
     }

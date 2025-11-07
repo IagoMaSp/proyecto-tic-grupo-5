@@ -1,0 +1,49 @@
+/* ====== Responsive (General) ====== */
+@media (max-width: 900px) {
+  .hero-full {
+    padding: 70px 0 60px;
+  }
+  
+  .headline {
+    font-size: clamp(32px, 8vw, 48px);
+  }
+  
+  .cta-row {
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 24px 16px;
+  }
+  
+  .card {
+    padding: 20px;
+    border-radius: 16px;
+  }
+  
+  .cf-track {
+    gap: 20px;
+    padding: 16px 20px 24px;
+  }
+  
+  .hero-content {
+    max-width: 100%;
+  }
+
+  .cta-row {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
