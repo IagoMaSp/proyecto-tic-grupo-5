@@ -1,4 +1,4 @@
-import type { UniversityFilters } from "../api.ts";
+import type { UniversityFilters } from "../../api.ts";
 
 interface UniversityFiltersProps {
   filters: UniversityFilters;

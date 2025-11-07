@@ -1,0 +1,250 @@
+/* ====== NAVBAR - Mejorada con animaciones ====== */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(140%) blur(12px);
+  border-bottom: 1px solid var(--border);
+  transition: all var(--transition-base);
+  animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.navbar.scrolled {
+  box-shadow: var(--shadow-sm);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.navbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.brand a {
+  text-decoration: none;
+  color: var(--um-blue-900);
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 0.3px;
+  transition: color var(--transition-fast);
+  position: relative;
+}
+
+.brand a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--um-blue-600);
+  transition: width var(--transition-base);
+}
+
+.brand a:hover::after {
+  width: 100%;
+}
+
+.menu {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.link {
+  padding: 8px 14px;
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--border-light);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  z-index: -1;
+}
+
+.link:hover::before {
+  opacity: 1;
+}
+
+.link:hover {
+  color: var(--um-blue-700);
+  transform: translateY(-1px);
+}
+
+.link.active {
+  background: var(--um-blue-100);
+  color: var(--um-blue-700);
+  border: 1px solid #cfe0ff;
+  font-weight: 600;
+}
+
+.link.active::before {
+  opacity: 0;
+}
+
+/* Botón de login en navbar */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.btn-login {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--um-blue-700);
+  color: white;
+  text-decoration: none;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.btn-login:hover {
+  background: var(--um-blue-600);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(31, 94, 209, 0.3);
+}
+
+.btn-login:active {
+  transform: translateY(0);
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--gray-50);
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  text-decoration: none;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--um-blue-100);
+}
+
+.user-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--um-blue-600);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  border: 2px solid var(--um-blue-100);
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.btn-logout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+  background: var(--gray-50);
+  color: var(--ink);
+  border-color: var(--um-blue-200);
+}
+
+
+/* Responsive para navbar */
+@media (max-width: 768px) {
+  .navbar-inner {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .menu {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .navbar-actions {
+    margin-left: 0;
+  }
+  
+  .user-name {
+    display: none;
+  }
+
+  .user-menu {
+    gap: 8px;
+  }
+
+  .btn-logout {
+    padding: 8px 12px;
+  }
+
+  .btn-logout span {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar-inner {
+    padding: 12px 16px;
+  }
+  
+  .menu {
+    gap: 4px;
+  }
+  
+  .link {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+}

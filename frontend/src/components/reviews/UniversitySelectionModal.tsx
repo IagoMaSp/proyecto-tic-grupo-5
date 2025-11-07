@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import * as api from "../../api";
 import type { University, UniversityFilters } from "../../api";
-import UniversityFiltersComponent from "../UniversityFilters"; // Renombrado para evitar confusión
+import UniversityFiltersComponent from "./UniversityFilters"; // Renombrado para evitar confusión
 import { useDebounce } from "../../hooks/useDebounce"; // Importamos el hook refactorizado
 
 interface UniversitySelectionModalProps {
