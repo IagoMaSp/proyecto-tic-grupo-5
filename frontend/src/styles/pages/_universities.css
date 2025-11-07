@@ -122,7 +122,6 @@
 
 .filter-panel-content {
   min-height: 0;
-  padding: 24px;
   background: var(--gray-50);
   border-radius: 16px;
   border: 1px solid var(--border);
