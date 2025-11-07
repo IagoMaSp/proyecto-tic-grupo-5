@@ -217,6 +217,16 @@ class UniversityViewSet(viewsets.ModelViewSet):
                 output_field=FloatField()
             )
         )
+    @action(detail=False, methods=['get'], url_path='most-reviewed')
+    def most_reviewed(self, request):
+        try:
+            limit = int(request.query_params.get('limit', 10))
+        except ValueError:
+            limit = 10
+        annotated_qs = University.objects.annotate(review_count=Count('reviews')).order_by('-review_count')[:limit]
+        serializer = self.get_serializer(annotated_qs, many=True)
+        return Response(serializer.data)
+        
 
 
 # --- ReviewViewSet ---
