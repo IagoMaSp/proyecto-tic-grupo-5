@@ -28,20 +28,45 @@ export default function ProfilePage() {
       
       try {
         setLoadingData(true);
-        const [reviewsData, wishlistData] = await Promise.all([
-          api.getUserReviews(),
-          api.getWishlistWithDetails(),
-        ]);
-        setUserReviews(reviewsData);
-        setUserWishlist(wishlistData);
+        console.log("[Profile] Iniciando fetch de datos...");
+
+        // --- LÓGICA CORREGIDA ---
+        // Pedimos los datos por separado. Si la wishlist falla,
+        // las reseñas igual se cargarán.
+
+        // 1. Pedir Reseñas
+        try {
+          const reviewsData = await api.getUserReviews();
+          console.log("[Profile] Reseñas recibidas:", reviewsData);
+          // Nos aseguramos de setear un array aunque la respuesta sea null/undefined
+          setUserReviews(reviewsData || []); 
+        } catch (error) {
+          console.error("[Profile] Error al fetchear REVIEWS:", error);
+          setUserReviews([]); // En caso de error, seteamos un array vacío
+        }
+
+        // 2. Pedir Wishlist
+        try {
+          const wishlistData = await api.getWishlistWithDetails();
+          console.log("[Profile] Wishlist recibida:", wishlistData);
+          setUserWishlist(wishlistData || []);
+        } catch (error) {
+          // Este es el error que vimos en la consola.
+          console.error("[Profile] Error al fetchear WISHLIST:", error);
+          setUserWishlist([]);
+        }
+
       } catch (error) {
-        console.error("Error fetching profile data:", error);
+        // Este catch general es por si algo más falla (poco probable)
+        console.error("[Profile] Error en el wrapper de fetchData:", error);
+      
       } finally {
+        // Esto se ejecutará después de que ambas llamadas terminen
         setLoadingData(false);
+        console.log("[Profile] Fetch finalizado, loading=false.");
       }
     };
 
-    // Solo fetchear si la autenticación no está cargando
     if (!authLoading) {
       fetchData();
     }
@@ -69,6 +94,9 @@ export default function ProfilePage() {
   }
 
   const renderTabContent = () => {
+    // Log para ver qué se está pasando al renderizar
+    console.log(`[Profile] Renderizando tab: ${activeTab}, Loading: ${loadingData}, Cantidad Reseñas: ${userReviews.length}`);
+
     if (loadingData) {
       return renderLoading();
     }
