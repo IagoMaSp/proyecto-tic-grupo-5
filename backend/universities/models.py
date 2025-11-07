@@ -51,6 +51,7 @@ class University(models.Model):
     qs_rating_bottom = models.IntegerField(null=False, blank=False)
     web_pages = models.URLField(null=False, blank=False)
     status = models.CharField(max_length=255, null=False, blank=False)
+    description = models.TextField(max_length=511, null=True, blank=True)
     continent = models.CharField(
         max_length=50,
         choices=CONTINENT_CHOICES,

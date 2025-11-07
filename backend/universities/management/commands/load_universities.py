@@ -115,7 +115,8 @@ class Command(BaseCommand):
                             'qs_rating_top': top,
                             'qs_rating_bottom': bottom,
                             'status': status,
-                            'continent': continent_mapped
+                            'continent': continent_mapped,
+                            'description': row['description'].strip()
                         })
                     
 
