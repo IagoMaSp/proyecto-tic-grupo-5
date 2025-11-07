@@ -17,6 +17,9 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 from rest_framework import serializers
+# AÑADIDO: Parsers para subida de archivos
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
 
 from .models import University, Review, Profile, Wishlist
 from .serializers import (
@@ -47,6 +50,9 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     queryset = User.objects.all()
     permission_classes = (IsAuthenticated,)
     serializer_class = UserSerializer
+    # AÑADIDO: Parsers para subida de foto de perfil
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
 
     def get_object(self):
         """Devuelve el usuario logueado."""
@@ -119,7 +125,7 @@ class UniversityViewSet(viewsets.ModelViewSet):
             'metadata': {
                 'total_universities': queryset.count(),
                 'unique_countries': stats['total_countries'],
-                'unique_continents': stats['total_continents'],  # ← ARREGLADO
+                'unique_continents': stats['total_continents'],
                 'avg_qs_rating': stats['avg_qs'],
         }
 })
@@ -240,6 +246,17 @@ class ReviewViewSet(viewsets.ModelViewSet):
         """Asigna el usuario autenticado."""
         serializer.save(user=self.request.user)
 
+    # AÑADIDO: Acción para "Mis Reseñas"
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_reviews(self, request):
+        """
+        Retorna todas las reviews escritas por el usuario autenticado.
+        Sin paginación.
+        """
+        reviews = self.get_queryset().filter(user=request.user).order_by('-id')
+        serializer = self.get_serializer(reviews, many=True)
+        return Response(serializer.data)
+
 
 # --- WishlistViewSet ---
 class WishlistViewSet(viewsets.ModelViewSet):
@@ -278,7 +295,7 @@ class WishlistViewSet(viewsets.ModelViewSet):
         if not university_id:
             return Response({"error": "Falta id de la universidad"}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            wishlist_entry = Wishlist.objects.get(user=request.user, university_id=university_id)
+            wishlist_entry = Wishlist.objects.get(user=self.request.user, university_id=university_id)
         except Wishlist.DoesNotExist:
             return Response({"error": "La universidad no está en la wishlist"}, status=status.HTTP_404_NOT_FOUND)
         wishlist_entry.delete()

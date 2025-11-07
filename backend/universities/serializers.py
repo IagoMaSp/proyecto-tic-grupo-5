@@ -316,6 +316,11 @@ class ProfileNestedSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ('id', 'profile_photo', 'profile_photo_url')
         read_only_fields = ('id', 'profile_photo_url')
+        # Hacemos profile_photo write_only para que no intente devolverlo
+        # al leer, solo al escribir (subir).
+        extra_kwargs = {
+            'profile_photo': {'write_only': True, 'required': False}
+        }
     
     def get_profile_photo_url(self, obj):
         """Retorna URL absoluta de la foto de perfil"""
@@ -333,12 +338,44 @@ class UserSerializer(serializers.ModelSerializer):
     """
     Serializador principal para el modelo User.
     Este es el formato que espera tu frontend (authContext.tsx).
+    
+    CORRECCIÓN: Se añade método update() para manejar la subida
+    de fotos de perfil desde FormData.
     """
     profile = ProfileNestedSerializer(read_only=True)
 
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'profile')
+        # Marcamos email como read_only, ya que la UI no permite cambiarlo
+        extra_kwargs = {
+            'email': {'read_only': True}
+        }
+
+    def update(self, instance, validated_data):
+        # 'instance' es el objeto User
+        
+        # 1. Actualizar campos del User (ej. username)
+        # validated_data solo contiene 'username' si se envió y cambió
+        instance.username = validated_data.get('username', instance.username)
+        instance.save()
+
+        # 2. Actualizar campos del Profile (la foto)
+        # La foto no está en validated_data porque es FormData.
+        # Debemos buscarla en self.context['request'].data.
+        request = self.context.get('request')
+        
+        # El frontend envía la foto con la clave 'profile.profile_photo'
+        # (según se definió en ProfileDetails.tsx)
+        if request and request.data.get('profile.profile_photo'):
+            photo_file = request.data.get('profile.profile_photo')
+            
+            # 'instance.profile' es el objeto Profile relacionado al User
+            profile_instance = instance.profile
+            profile_instance.profile_photo = photo_file
+            profile_instance.save()
+
+        return instance
 
 
 class RegisterSerializer(serializers.ModelSerializer):
