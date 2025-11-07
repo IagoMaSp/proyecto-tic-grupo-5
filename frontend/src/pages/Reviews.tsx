@@ -3,13 +3,10 @@ import { useEffect, useState} from "react";
   import * as api from "../api.ts";
   import type { Review } from "../api.ts";
 
-  // Importaciones de componentes que antes estaban definidos localmente
   import NotLoggedInView from "../components/reviews/NotLoggedInView.tsx";
   import ReviewForm from "../components/reviews/ReviewForm.tsx";
   import ReviewCard from "../components/reviews/ReviewCard.tsx";
 
-
-  // --- Componente Principal ---
 
   export default function Reviews() {
     const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -35,7 +32,7 @@ import { useEffect, useState} from "react";
 
     const handleReviewCreated = (newReview: Review) => {
       setReviews([newReview, ...reviews]);
-      fetchAllReviews(); // Recargar todo por si acaso
+      fetchAllReviews();
     };
 
     if (authLoading) {
@@ -82,8 +79,3 @@ import { useEffect, useState} from "react";
       </section>
     );
   }
-
-  // --- Componentes locales eliminados ---
-  // Las definiciones de NotLoggedInView, ReviewForm, RatingSlider,
-  // UniversitySelectionModal y ReviewCard fueron eliminadas
-  // ya que ahora se importan de sus respectivos archivos.

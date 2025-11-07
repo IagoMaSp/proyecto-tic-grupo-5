@@ -100,7 +100,7 @@ export interface Profile {
   // Modificado para que coincida con el serializer
   profile: {
     id: number;
-    profile_photo: string | null;
+    // 'profile_photo' es write-only en el backend, no se incluye en la RTA
     profile_photo_url: string | null;
   };
 }
@@ -193,6 +193,18 @@ export const createReview = async (reviewData: Partial<Review>): Promise<Review>
   return handleResponse(response);
 };
 
+// FUNCIÓN FALTANTE (AÑADIDA)
+/**
+ * Obtiene solo las reviews del usuario autenticado.
+ */
+export const getUserReviews = async (): Promise<Review[]> => {
+  const response = await fetch(`${API_BASE_URL}/reviews/my_reviews/`, {
+    headers: getHeaders(true),
+  });
+  return handleResponse(response);
+};
+
+
 // ===== WISHLIST =====
 
 export const getWishlist = async (): Promise<Wishlist[]> => {
@@ -284,6 +296,26 @@ export const getProfile = async (): Promise<Profile> => {
   
   return handleResponse(response);
 };
+
+// FUNCIÓN FALTANTE (AÑADIDA)
+/**
+ * Actualiza el perfil del usuario (username y/o profile_photo).
+ * Usa FormData para permitir la subida de archivos.
+ */
+export const updateProfile = async (formData: FormData): Promise<Profile> => {
+  const response = await fetch(`${API_BASE_URL}/profile/`, {
+    method: 'PATCH',
+    headers: {
+      // No setear 'Content-Type', el navegador lo hace por FormData
+      'Accept': 'application/json',
+      // @ts-ignore
+      'Authorization': getHeaders(true)['Authorization'], // Solo header de Auth
+    },
+    body: formData,
+  });
+  return handleResponse(response);
+};
+
 
 // ===== ADICIONES =====
 

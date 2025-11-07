@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { AuthProvider } from "./contexts/authContext";
+import { AuthProvider, useAuth } from "./contexts/authContext";
+import type { ReactNode } from "react";
 import RootLayout from "./layouts/RootLayout";
 import Home from "./pages/Home";
 import Universities from "./pages/Universities";
@@ -9,6 +10,27 @@ import About from "./pages/About";
 import LogIn from "./pages/LogIn";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
+import ProfilePage from "./pages/Profile.tsx";
+
+// Componente para proteger rutas
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="card loading-container">
+        <div className="loading-spinner" />
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    // La página de perfil se encargará de mostrar
+    // el contenido de "no logueado".
+  }
+  
+  return <>{children}</>;
+}
 
 const router = createBrowserRouter([
   {
@@ -23,6 +45,15 @@ const router = createBrowserRouter([
       { path: "about", element: <About /> },
       { path: "login", element: <LogIn /> },
       { path: "register", element: <Register /> },
+      // Nueva Ruta de Perfil
+      {
+        path: "profile",
+        element: (
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        ),
+      },
       { path: "*", element: <NotFound /> },
     ],
   },
