@@ -1,4 +1,4 @@
-// frontend/src/components/navbar/UserMenu.tsx
+import { Link } from "react-router-dom";
 
 interface User {
   id: number;
@@ -16,7 +16,7 @@ interface UserMenuProps {
 export default function UserMenu({ user, onLogout }: UserMenuProps) {
   return (
     <div className="user-menu">
-      <div className="user-info">
+      <Link to="/profile" className="user-info">
         {user.profile.profile_photo_url ? (
           <img 
             src={user.profile.profile_photo_url} 
@@ -29,7 +29,7 @@ export default function UserMenu({ user, onLogout }: UserMenuProps) {
           </div>
         )}
         <span className="user-name">{user.username}</span>
-      </div>
+      </Link>
       
       <button onClick={onLogout} className="btn-logout">
         <svg

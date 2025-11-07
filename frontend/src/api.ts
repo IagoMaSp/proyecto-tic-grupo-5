@@ -3,7 +3,10 @@
  * Todas las llamadas al backend pasan por aquí
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// MODIFICACIÓN: Usar ruta relativa para que funcione el proxy de Vite
+// const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 
 // Helper para headers comunes
 const getHeaders = (includeAuth = false) => {
@@ -28,6 +31,10 @@ const handleResponse = async (response: Response) => {
     const error = await response.json().catch(() => ({ detail: 'Error desconocido' }));
     throw new Error(error.detail || `HTTP ${response.status}`);
   }
+  // MODIFICACIÓN: Manejar respuestas vacías (como en DELETE)
+  if (response.status === 204) {
+    return;
+  }
   return response.json();
 };
 
@@ -47,6 +54,12 @@ export interface University {
   visits_count: number;
   overall_avg_rating: number | null;
   photos?: Photo[];
+  // Añadido para que coincida con el serializer
+  review_count?: number; 
+  avg_social?: number;
+  avg_academic?: number;
+  avg_place?: number;
+  faculties?: string[]; // o Faculty[] si usamos el serializer de detalle
 }
 
 export interface Photo {
@@ -68,6 +81,7 @@ export interface Review {
   university: number;
   username?: string;
   university_name?: string;
+  user_profile_photo?: string | null;
 }
 
 export interface Wishlist {
@@ -75,13 +89,20 @@ export interface Wishlist {
   user: number;
   university: number;
   created_at: string;
+  // Añadido para que coincida con el serializer
+  university_detail?: University; 
 }
 
 export interface Profile {
   id: number;
   username: string;
   email: string;
-  profile_photo: string | null;
+  // Modificado para que coincida con el serializer
+  profile: {
+    id: number;
+    // 'profile_photo' es write-only en el backend, no se incluye en la RTA
+    profile_photo_url: string | null;
+  };
 }
 
 // ===== UNIVERSITIES =====
@@ -98,7 +119,18 @@ export interface UniversityFilters {
   ordering?: string;
 }
 
-export const getUniversities = async (filters?: UniversityFilters): Promise<University[]> => {
+// MODIFICACIÓN: El backend devuelve un objeto { results: [], metadata: {} }
+export interface UniversityListResponse {
+  results: University[];
+  metadata: {
+    total_universities: number;
+    unique_countries: number;
+    unique_continents: number;
+    avg_qs_rating: number | null;
+  };
+}
+
+export const getUniversities = async (filters?: UniversityFilters): Promise<UniversityListResponse> => {
   const params = new URLSearchParams();
   
   if (filters) {
@@ -114,6 +146,7 @@ export const getUniversities = async (filters?: UniversityFilters): Promise<Univ
     headers: getHeaders(),
   });
   
+  // El backend siempre devuelve el objeto, incluso si no hay filtros
   return handleResponse(response);
 };
 
@@ -125,7 +158,7 @@ export const getUniversity = async (id: number): Promise<University> => {
   return handleResponse(response);
 };
 
-export const getTopUniversities = async (limit = 10): Promise<University[]> => {
+export const getTopUniversities = async (limit = 10): Promise<UniversityListResponse> => {
   const response = await fetch(
     `${API_BASE_URL}/universities/?ordering=qs_rating_top&limit=${limit}`,
     {
@@ -160,6 +193,18 @@ export const createReview = async (reviewData: Partial<Review>): Promise<Review>
   return handleResponse(response);
 };
 
+// FUNCIÓN FALTANTE (AÑADIDA)
+/**
+ * Obtiene solo las reviews del usuario autenticado.
+ */
+export const getUserReviews = async (): Promise<Review[]> => {
+  const response = await fetch(`${API_BASE_URL}/reviews/my_reviews/`, {
+    headers: getHeaders(true),
+  });
+  return handleResponse(response);
+};
+
+
 // ===== WISHLIST =====
 
 export const getWishlist = async (): Promise<Wishlist[]> => {
@@ -171,7 +216,8 @@ export const getWishlist = async (): Promise<Wishlist[]> => {
 };
 
 export const addToWishlist = async (universityId: number): Promise<Wishlist> => {
-  const response = await fetch(`${API_BASE_URL}/wishlists/`, {
+  // MODIFICACIÓN: Usar el endpoint 'add-by-university'
+  const response = await fetch(`${API_BASE_URL}/wishlists/add-by-university/`, {
     method: 'POST',
     headers: getHeaders(true),
     body: JSON.stringify({ university: universityId }),
@@ -180,15 +226,17 @@ export const addToWishlist = async (universityId: number): Promise<Wishlist> => 
   return handleResponse(response);
 };
 
-export const removeFromWishlist = async (wishlistId: number): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/wishlists/${wishlistId}/`, {
-    method: 'DELETE',
+export const removeFromWishlist = async (universityId: number): Promise<void> => {
+  // MODIFICACIÓN: Usar el endpoint 'remove-by-university' y enviar ID de universidad
+  const response = await fetch(`${API_BASE_URL}/wishlists/remove-by-university/`, {
+    method: 'POST',
     headers: getHeaders(true),
+    body: JSON.stringify({ university: universityId })
   });
   
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
+  if (!response.ok && response.status !== 204) {
+    throw new Error(`HTTP ${response.status}`);
+  }
 };
 
 // ===== AUTH =====
@@ -199,9 +247,10 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData {
-  username: string;
-  email: string;
-  password: string;
+  username: string;
+  email: string;
+  password: string;
+  password_confirm: string; // Añadido para que coincida con el serializer
 }
 
 export interface TokenResponse {
@@ -225,7 +274,7 @@ export const login = async (credentials: LoginCredentials): Promise<TokenRespons
   return data;
 };
 
-export const register = async (data: RegisterData): Promise<void> => {
+export const register = async (data: RegisterData): Promise<Profile> => { // Devuelve el perfil de usuario
   const response = await fetch(`${API_BASE_URL}/register/`, {
     method: 'POST',
     headers: getHeaders(),
@@ -248,6 +297,26 @@ export const getProfile = async (): Promise<Profile> => {
   return handleResponse(response);
 };
 
+// FUNCIÓN FALTANTE (AÑADIDA)
+/**
+ * Actualiza el perfil del usuario (username y/o profile_photo).
+ * Usa FormData para permitir la subida de archivos.
+ */
+export const updateProfile = async (formData: FormData): Promise<Profile> => {
+  const response = await fetch(`${API_BASE_URL}/profile/`, {
+    method: 'PATCH',
+    headers: {
+      // No setear 'Content-Type', el navegador lo hace por FormData
+      'Accept': 'application/json',
+      // @ts-ignore
+      'Authorization': getHeaders(true)['Authorization'], // Solo header de Auth
+    },
+    body: formData,
+  });
+  return handleResponse(response);
+};
+
+
 // ===== ADICIONES =====
 
 // Tipos nuevos para las funciones agregadas
@@ -266,10 +335,16 @@ export interface WishlistWithDetails extends Wishlist {
  * Asume un endpoint 'universities/filter-options/' que devuelve las listas.
  */
 export const getFilterOptions = async (): Promise<UniversityFilterOptions> => {
-  const response = await fetch(`${API_BASE_URL}/universities/filter-options/`, {
+  // MODIFICACIÓN: Este endpoint no existe, pero getUniversities/countries/ sí
+  const response = await fetch(`${API_BASE_URL}/universities/countries/`, {
     headers: getHeaders(),
   });
-  return handleResponse(response);
+  const data = await handleResponse(response);
+  // Simulado, ya que no hay endpoint para continentes
+  return {
+    countries: data.countries || [],
+    continents: ["America", "Europe", "Asia", "Oceania", "Africa"]
+  };
 };
 
 /**
@@ -277,20 +352,14 @@ export const getFilterOptions = async (): Promise<UniversityFilterOptions> => {
  * de cada universidad, ya que la API base de wishlist solo devuelve IDs.
  */
 export const getWishlistWithDetails = async (): Promise<WishlistWithDetails[]> => {
-  // 1. Obtener la lista de IDs de la wishlist
-  const wishlistItems = await getWishlist();
+  // 1. Obtener la lista de la wishlist
+  const wishlistItems = await getWishlist(); // Esto ya tiene university_detail
   
-  // 2. Para cada item, buscar los detalles de la universidad
-  const detailedItems = await Promise.all(
-    wishlistItems.map(async (item) => {
-      // Reutiliza la función existente 'getUniversity'
-      const university_details = await getUniversity(item.university);
-      return {
-        ...item,
-        university_details, // Agrega los detalles al objeto
-      };
-    })
-  );
+  // 2. Mapear para asegurar el formato
+  const detailedItems = wishlistItems.map(item => ({
+    ...item,
+    university_details: item.university_detail as University
+  }));
   
   return detailedItems;
 };

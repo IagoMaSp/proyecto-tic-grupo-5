@@ -46,7 +46,7 @@ INSTALLED_APPS = [
 
     # Apps locales
     'universities',
-    'rest_framework.authtoken',
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
@@ -158,6 +158,7 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 
 # 2. Configuración de Django Rest Framework (DRF)
+#    (Se eliminó el bloque duplicado que usaba TokenAuthentication)
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',

@@ -1,4 +1,3 @@
-// frontend/src/pages/Register.tsx (SIMPLIFICADO)
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/authContext";
@@ -6,15 +5,19 @@ import { useAuthForm } from "../hooks/useAuthForm";
 import { validateRegister, calculatePasswordStrength, getPasswordStrengthLabel } from "../services/auth/authValidation";
 import AuthBranding from "../components/auth/AuthBranding";
 import FormField from "../components/auth/FormField";
+import * as api from "../api";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [passwordStrength, setPasswordStrength] = useState(0);
   
   useEffect(() => {
     document.title = "UM Exchange | Registrarse";
-  }, []);
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [navigate, isAuthenticated]);
 
   const {
     formData,
@@ -32,25 +35,27 @@ export default function Register() {
     },
     validate: validateRegister,
     onSubmit: async (data) => {
-      // 1. Registrar
-      const response = await fetch('/api/register/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // 1. Registrar usando el servicio de api
+      try {
+        await api.register({
           username: data.username,
-          email: data.email,
+          email: data.email || '', // Asegurarse de que no sea undefined
           password: data.password,
-          password_confirm: data.confirmPassword,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        if (error.username) throw new Error(`Usuario: ${error.username[0]}`);
-        if (error.email) throw new Error(`Email: ${error.email[0]}`);
-        if (error.password) throw new Error(`Contraseña: ${error.password[0]}`);
-        throw new Error(Object.values(error).flat().join(' ') || 'Error al registrarse');
+          password_confirm: data.confirmPassword || '', // Asegurarse de que no sea undefined
+        });
+      } catch (error) {
+         // Manejar errores de registro específicos (ej. email duplicado)
+        const errorMessage = (error as Error).message;
+        let specificError = "Error al registrarse. ";
+        if (errorMessage.includes("username")) {
+          specificError = "Ese nombre de usuario ya está en uso.";
+        } else if (errorMessage.includes("email")) {
+          specificError = "Ese email ya está en uso.";
+        }
+        // Lanzar error para que lo capture el hook
+        throw new Error(specificError);
       }
+
 
       // 2. Auto-login
       await login(data.username, data.password);

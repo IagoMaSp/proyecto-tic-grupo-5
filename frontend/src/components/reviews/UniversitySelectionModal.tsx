@@ -1,21 +1,8 @@
 import { useEffect, useState } from "react";
 import * as api from "../../api";
 import type { University, UniversityFilters } from "../../api";
-import UniversityFiltersProps from "../UniversityFilters";
-
-// Hook para "debouncing"
-function useDebounce(value: any, delay: number) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-  return debouncedValue;
-}
+import UniversityFiltersComponent from "./UniversityFilters"; // Renombrado para evitar confusión
+import { useDebounce } from "../../hooks/useDebounce"; // Importamos el hook refactorizado
 
 interface UniversitySelectionModalProps {
   onSelect: (university: University) => void;
@@ -26,40 +13,35 @@ export default function UniversitySelectionModal({
   onSelect,
   onClose,
 }: UniversitySelectionModalProps) {
-  // Se eliminó la vista de "wishlist"
   const [searchResults, setSearchResults] = useState<University[]>([]);
   const [loading, setLoading] = useState(false);
-  
-  // Usamos el tipo 'UniversityFilters' de tu api.ts
   const [filters, setFilters] = useState<UniversityFilters>({});
   
-  // Ya no hay 'filterOptions'
-  
+  // Usamos el hook useDebounce para el objeto de filtros completo
   const debouncedFilters = useDebounce(filters, 300);
-
-  // Se eliminó el useEffect para 'fetchOptions'
-
-  // Se eliminó el useEffect para 'fetchWishlist'
 
   // Ejecutar búsqueda/filtrado
   useEffect(() => {
     const fetchUniversities = async () => {
       setLoading(true);
       try {
-        // Solo buscar si hay algún filtro aplicado
-        if (Object.keys(debouncedFilters).length > 0) {
+        // MODIFICACIÓN: Solo buscar si 'search' tiene un valor.
+        if (debouncedFilters.search && debouncedFilters.search.length > 0) {
           const data = await api.getUniversities(debouncedFilters);
-          setSearchResults(data);
+          // MODIFICACIÓN: Acceder a 'data.results' o 'data' si no es paginado
+          setSearchResults(data.results || data);
         } else {
-          setSearchResults([]); // Limpiar si no hay filtros
+          setSearchResults([]); // Limpiar si no hay búsqueda
         }
       } catch (error) {
         console.error("Error searching universities:", error);
       }
       setLoading(false);
     };
+
     fetchUniversities();
-  }, [debouncedFilters]);
+    
+  }, [debouncedFilters]); // Se activa cuando el valor "debounced" cambia
 
   const renderUniversityItem = (university: University) => (
     <div
@@ -85,15 +67,11 @@ export default function UniversitySelectionModal({
           </button>
         </div>
         
-        {/* Se eliminaron los tabs del modal */}
-        
         <div className="modal-body">
-          {/* Ya no hay 'view' */}
           <>
-            <UniversityFiltersProps
+            <UniversityFiltersComponent
               filters={filters}
               onFilterChange={setFilters}
-              // Ya no se pasan 'options'
             />
             <div className="uni-search-list" style={{marginTop: '16px'}}>
               {loading && <p>Buscando...</p>}
@@ -101,19 +79,16 @@ export default function UniversitySelectionModal({
                 searchResults.map((uni) => renderUniversityItem(uni))}
               {!loading &&
                 searchResults.length === 0 &&
-                Object.keys(debouncedFilters).length > 0 && (
-                  <p>No se encontraron resultados para esos filtros.</p>
+                debouncedFilters.search && (
+                  <p>No se encontraron resultados para "{debouncedFilters.search}".</p>
                 )}
                {!loading &&
                 searchResults.length === 0 &&
-                Object.keys(debouncedFilters).length === 0 && (
-                  <p>Aplicá un filtro para buscar universidades.</p>
+                !debouncedFilters.search && (
+                  <p>Escribí al menos un caracter para buscar.</p>
                 )}
             </div>
           </>
-          
-          {/* Se eliminó el 'view === "wishlist"' */}
-          
         </div>
       </div>
     </div>

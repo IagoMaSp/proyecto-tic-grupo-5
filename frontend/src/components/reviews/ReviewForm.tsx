@@ -142,7 +142,12 @@ export default function ReviewForm({ onReviewCreated }: ReviewFormProps) {
             <label htmlFor="university" className="form-label">
               Universidad
             </label>
-            <div className="university-selector">
+            {/* MODIFICACIÓN: El onClick ahora está en el div wrapper */}
+            <div
+              className="university-selector"
+              onClick={() => setIsModalOpen(true)}
+              style={{ cursor: "pointer" }}
+            >
               <input
                 type="text"
                 id="university"
@@ -151,11 +156,12 @@ export default function ReviewForm({ onReviewCreated }: ReviewFormProps) {
                 value={formData.university_name}
                 placeholder="Seleccioná una universidad"
                 readOnly
+                style={{ cursor: "pointer" }} // Añadido para mejor UX
               />
               <button
                 type="button"
                 className="btn ghost"
-                onClick={() => setIsModalOpen(true)}
+                // El onClick se movió al div wrapper
               >
                 Elegir
               </button>
