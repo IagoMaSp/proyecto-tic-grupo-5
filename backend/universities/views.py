@@ -286,27 +286,69 @@ class WishlistViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError("Esta universidad ya está en tu wishlist.")
         serializer.save(user=self.request.user)
     
+    @action(detail=False, methods=['get'], url_path='university-ids')
+    def get_university_ids(self, request):
+        """
+        Obtiene solo los IDs de las universidades en la wishlist del usuario.
+        Más eficiente que traer toda la información.
+        """
+        university_ids = Wishlist.objects.filter(
+            user=request.user
+        ).values_list('university_id', flat=True)
+        
+        return Response({
+            'wishlist': list(university_ids)
+        }, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=['post'], url_path='add-by-university')
     def add_by_university(self, request):
         """Añadir universidad a wishlist."""
         university_id = request.data.get('university')
         if not university_id:
-            return Response({"error": "Falta id de la universidad"}, status=status.HTTP_400_BAD_REQUEST)
-        wishlist, created = Wishlist.objects.get_or_create(user=request.user, university_id=university_id)
+            return Response(
+                {"error": "Falta id de la universidad"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        wishlist, created = Wishlist.objects.get_or_create(
+            user=request.user, 
+            university_id=university_id
+        )
+        
         if not created:
-            return Response({"error": "La universidad ya está en la wishlist"}, status=status.HTTP_400_BAD_REQUEST)
+            # No es error, simplemente ya existe
+            return Response(
+                {"message": "La universidad ya está en la wishlist"}, 
+                status=status.HTTP_200_OK
+            )
+        
         data = self.get_serializer(wishlist).data
         return Response(data, status=status.HTTP_201_CREATED)
     
+
     @action(detail=False, methods=['post'], url_path='remove-by-university')
     def remove_by_university(self, request):
         """Eliminar universidad de wishlist."""
         university_id = request.data.get('university')
         if not university_id:
-            return Response({"error": "Falta id de la universidad"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Falta id de la universidad"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         try:
-            wishlist_entry = Wishlist.objects.get(user=self.request.user, university_id=university_id)
+            wishlist_entry = Wishlist.objects.get(
+                user=self.request.user, 
+                university_id=university_id
+            )
         except Wishlist.DoesNotExist:
-            return Response({"error": "La universidad no está en la wishlist"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "La universidad no está en la wishlist"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
         wishlist_entry.delete()
-        return Response({'message': 'Universidad eliminada de la wishlist'}, status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {'message': 'Universidad eliminada de la wishlist'}, 
+            status=status.HTTP_204_NO_CONTENT
+        )

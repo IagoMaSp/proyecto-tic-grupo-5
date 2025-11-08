@@ -1,0 +1,53 @@
+.uni-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.uni-name {
+  flex: 1;
+  margin: 0;
+}
+
+/* Botón de wishlist */
+.wishlist-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  color: #94a3b8; /* Color gris por defecto */
+  flex-shrink: 0; /* Evita que se encoja */
+}
+
+.wishlist-button:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--um-blue-900);
+  transform: scale(1.1);
+}
+
+.wishlist-button.active {
+  color: var(--um-blue-900);
+}
+
+.wishlist-button.active:hover {
+  background-color: rgba(239, 68, 68, 0.15);
+  transform: scale(1.05);
+}
+
+.wishlist-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Asegurar que el Link no cambie el estilo del botón */
+.university-card .wishlist-button:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
