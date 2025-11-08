@@ -1,0 +1,68 @@
+/* Agregar estos estilos al archivo university-detail.css existente */
+
+/* Photo Thumbnails (moderno para 3-4 fotos) */
+.photo-thumbnails {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  gap: 12px;
+}
+
+.photo-thumb {
+  width: 80px;
+  height: 50px;
+  border-radius: 8px;
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  opacity: 0.7;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.photo-thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  transition: opacity var(--transition-fast);
+}
+
+.photo-thumb:hover {
+  opacity: 1;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.photo-thumb:hover::after {
+  opacity: 0;
+}
+
+.photo-thumb.active {
+  border-color: white;
+  opacity: 1;
+  transform: scale(1.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.photo-thumb.active::after {
+  opacity: 0;
+}
+
+/* Responsive thumbnails */
+@media (max-width: 640px) {
+  .photo-thumbnails {
+    gap: 8px;
+  }
+  
+  .photo-thumb {
+    width: 60px;
+    height: 40px;
+  }
+}
