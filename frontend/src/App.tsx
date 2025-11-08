@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import RootLayout from "./layouts/RootLayout";
 import Home from "./pages/Home";
 import Universities from "./pages/Universities";
+import UniversityDetail from "./pages/UniversityDetail"; // ⬅️ AGREGAR ESTE IMPORT
 import Compare from "./pages/Compare";
 import Reviews from "./pages/Reviews";
 import About from "./pages/About";
@@ -40,6 +41,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: "universities", element: <Universities /> },
+      { path: "universities/:id", element: <UniversityDetail /> }, // ⬅️ AGREGAR ESTA LÍNEA
       { path: "compare", element: <Compare /> },
       { path: "reviews", element: <Reviews /> },
       { path: "about", element: <About /> },

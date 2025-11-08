@@ -32,3 +32,6 @@
 
 /* 5. Utilidades (Helpers, Clases de utilidad) */
 @import url('./utils/_helpers.css');
+
+/* University Details */
+@import url('./pages/_university-details.css');
