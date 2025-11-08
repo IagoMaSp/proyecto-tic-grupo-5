@@ -60,6 +60,7 @@ export interface University {
   avg_academic?: number;
   avg_place?: number;
   faculties?: string[]; // o Faculty[] si usamos el serializer de detalle
+  description: string;
 }
 
 export interface Photo {
@@ -171,6 +172,34 @@ export const getTopUniversities = async (limit = 10): Promise<UniversityListResp
   );
   
   return handleResponse(response);
+};
+
+/**
+ * AGREGAR ESTAS FUNCIONES AL ARCHIVO api.ts EXISTENTE
+ * Copiar después de la función getUniversity()
+ */
+
+// Incrementar contador de visitas
+export const incrementUniversityVisits = async (id: number): Promise<void> => {
+  try {
+    await fetch(`${API_BASE_URL}/universities/${id}/increment_visits/`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+  } catch (error) {
+    // Silenciosamente fallar, no es crítico
+    console.warn('Failed to increment visits:', error);
+  }
+};
+
+// Verificar si una universidad está en la wishlist
+export const isInWishlist = async (universityId: number): Promise<boolean> => {
+  try {
+    const wishlist = await getWishlist();
+    return wishlist.some(item => item.university === universityId);
+  } catch {
+    return false;
+  }
 };
 
 // ===== REVIEWS =====
