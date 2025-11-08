@@ -2,7 +2,7 @@ import pandas as pd
 import re
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from universities.models import University, Faculty
+from universities.models import University, Faculty, PhotosUniversity
 from unidecode import unidecode
 from thefuzz import process
 
@@ -138,6 +138,42 @@ class Command(BaseCommand):
                     
             self.stdout.write(self.style.SUCCESS(f'\n Carga completada: {universities_created} creadas, {universities_updated} actualizadas, {universities_skipped} omitidas.'))
 
+
+                # --- FASE 2: RE-ENLACE DE FOTOS (La nueva lógica) ---
+            self.stdout.write("Iniciando re-enlace de fotos...")
+            
+            # 1. Encuentra todas las fotos que están "huérfanas" (university_id es NULL)
+            #    pero que SÍ tienen un nombre en el linker.
+            orphan_photos = PhotosUniversity.objects.filter(
+                university__isnull=True, 
+                university_name_linker__isnull=False
+            )
+            
+            if not orphan_photos.exists():
+                self.stdout.write("No hay fotos huérfanas para re-enlazar. Todo listo.")
+                self.stdout.write("Proceso de carga completado.")
+                return
+
+            self.stdout.write(f"Se encontraron {orphan_photos.count()} fotos huérfanas. Intentando re-enlazar...")
+            
+            # 2. Carga todas las universidades nuevas en memoria para eficiencia
+            universities_map = {uni.name: uni for uni in University.objects.all()}
+            
+            relinked_count = 0
+            
+            for photo in orphan_photos:
+                university_match = universities_map.get(photo.university_name_linker)
+                
+                if university_match:
+                    photo.university = university_match
+                    photo.save()
+                    relinked_count += 1
+
+            self.stdout.write(f"Se re-enlazaron exitosamente {relinked_count} fotos.")
+            if relinked_count < orphan_photos.count():
+                self.stdout.write(f"ADVERTENCIA: {orphan_photos.count() - relinked_count} fotos no encontraron una universidad y siguen huérfanas.")
+
+            self.stdout.write("Proceso de carga y re-enlace completado.")
 
         except FileNotFoundError as e:
             self.stdout.write(self.style.ERROR(f'Error: File not found. {e}'))

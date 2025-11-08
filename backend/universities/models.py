@@ -126,15 +126,17 @@ class PhotosUniversity(models.Model):
     # Relaciona cada foto con una única universidad.
     university = models.ForeignKey(
         University,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name='photos',
-        null=False,
+        null=True,
         blank=False
     )
-    
+    university_name_linker = models.CharField(max_length=255, null=True, blank=True, db_index=True, help_text="Usado internamente para re-enlazar fotos si las universidades se recargan.")
     photo = models.ImageField(upload_to='university_photos/', blank=False, null=False)
 
     def __str__(self):
+        if self.university is None:
+            return f'Foto sin universidad asociada (antes de {self.univeersity_name_linker or "desconocido"})'
         return f'Foto de {self.university.name}'
 
     class Meta:
