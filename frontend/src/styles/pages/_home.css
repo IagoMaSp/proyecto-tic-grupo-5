@@ -79,6 +79,27 @@
   font-weight: 600;
 }
 
+/* Carousel Skeleton & Empty States */
+.carousel-skeleton {
+  margin: 32px 0;
+  animation: fadeIn 0.3s ease;
+}
+
+.carousel-empty {
+  text-align: center;
+  padding: 80px 20px;
+  background: var(--gray-50);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  margin: 32px 0;
+}
+
+.carousel-empty p {
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
 /* CTA Card */
 .cta-card {
   background: linear-gradient(135deg, var(--um-blue-700) 0%, var(--um-blue-600) 100%);
@@ -151,5 +172,31 @@
   
   .cta-card {
     padding: 40px 24px;
+  }
+
+  .carousel-empty {
+    padding: 60px 20px;
+  }
+
+  .carousel-empty p {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-full {
+    margin-bottom: 60px;
+  }
+
+  .stats-row {
+    margin-top: 32px;
+  }
+
+  .cta-title {
+    font-size: 1.8rem;
+  }
+
+  .cta-text {
+    font-size: 1rem;
   }
 }

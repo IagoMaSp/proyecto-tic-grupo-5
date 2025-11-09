@@ -1,22 +1,24 @@
-// frontend/src/pages/LogIn.tsx (SIMPLIFICADO)
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/authContext";
-import { useAuthForm } from "../hooks/useAuthForm";
-import { validateLogin } from "../services/auth/authValidation";
-import AuthBranding from "../components/auth/AuthBranding";
-import LoginForm from "../components/auth/LoginForm";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/authContext.tsx";
+import { useAuthForm } from "../hooks/useAuthForm.ts";
+import { validateLogin } from "../services/auth/authValidation.ts";
+import AuthBranding from "../components/auth/AuthBranding.tsx";
+import LoginForm from "../components/auth/LoginForm.tsx";
 
 export default function LogIn() {
   const navigate = useNavigate();
+  const location = useLocation(); 
   const { login, isAuthenticated } = useAuth();
   
+  const from = location.state?.from?.pathname || "/";
+
   useEffect(() => {
     document.title = "UM Exchange | Iniciar sesión";
     if (isAuthenticated) {
-      navigate("/");
+      navigate(from, { replace: true });
     }
-  }, [navigate, isAuthenticated]);
+  }, [navigate, isAuthenticated, from]);
 
   const {
     formData,
@@ -32,7 +34,7 @@ export default function LogIn() {
     validate: validateLogin,
     onSubmit: async (data) => {
       await login(data.username, data.password);
-      navigate("/");
+      navigate(from, { replace: true });
     },
   });
 

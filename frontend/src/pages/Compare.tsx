@@ -1,8 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useCompareUniversities } from "../hooks/useCompareUniversities";
 import CompareSearchBar from "../components/compare/ComparesearchBar";
 import CompareCard from "../components/compare/CompareCard";
 import CompareEmptyState from "../components/compare/CompateEmptyState";
+import * as api from "../api";
 
 export default function Compare() {
   const {
@@ -19,9 +21,34 @@ export default function Compare() {
     canAddMore,
   } = useCompareUniversities();
 
+  const [searchParams] = useSearchParams();
+  const hasLoadedFromUrlRef = useRef(false);
+
   useEffect(() => {
     document.title = "UM Exchange | Comparar";
-  }, []);
+
+    const uniIdFromUrl = searchParams.get('ids');
+    if (uniIdFromUrl && !hasLoadedFromUrlRef.current) {
+      hasLoadedFromUrlRef.current = true;
+      const universityId = parseInt(uniIdFromUrl, 10);
+
+      if (!isNaN(universityId)) {
+        const addUniversityFromId = async (id: number) => {
+          try {
+            const universityToAdd = await api.getUniversity(id);
+            if (universityToAdd) {
+              addUniversity(universityToAdd);
+            }
+          } catch (error) {
+            console.error("Error al pre-cargar universidad:", error);
+          }
+        };
+
+        addUniversityFromId(universityId);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, addUniversity]);
 
   return (
     <section className="container">

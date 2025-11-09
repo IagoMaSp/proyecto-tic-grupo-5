@@ -15,7 +15,8 @@ export default function UniversityDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const hasIncremented = useRef(false);
+  // Esta ref evitará el doble fetch en StrictMode
+  const hasFetchedData = useRef(false);
 
   const [university, setUniversity] = useState<University | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -24,33 +25,36 @@ export default function UniversityDetail() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Protección contra doble ejecución en StrictMode
+    if (hasFetchedData.current) {
+      return;
+    }
+    hasFetchedData.current = true;
+
     const fetchData = async () => {
       if (!id) return;
-  
+ 
       try {
         setLoading(true);
         setError(null);
-  
+ 
+        // Se asume que getUniversity incrementa las visitas en el backend.
+        // La llamada explícita a incrementUniversityVisits se elimina.
         const [uniData, reviewsData] = await Promise.all([
           api.getUniversity(parseInt(id)),
           api.getReviews(parseInt(id)),
         ]);
-  
+ 
         setUniversity(uniData);
         setReviews(reviewsData);
-  
-        // Evita el doble incremento en StrictMode
-        const hasVisited = sessionStorage.getItem(`visited-${id}`);
-        if (!hasVisited) {
-          await api.incrementUniversityVisits(parseInt(id));
-          sessionStorage.setItem(`visited-${id}`, "true");
-        }
-  
+ 
+        // La lógica de sessionStorage ya no es necesaria.
+ 
         if (isAuthenticated) {
           const inWishlist = await api.isInWishlist(parseInt(id));
           setIsInWishlist(inWishlist);
         }
-  
+ 
         document.title = `${uniData.name} | UM Exchange`;
       } catch (err) {
         console.error("Error fetching university:", err);
@@ -59,7 +63,7 @@ export default function UniversityDetail() {
         setLoading(false);
       }
     };
-  
+ 
     fetchData();
   }, [id, isAuthenticated]);  
   
@@ -176,7 +180,7 @@ export default function UniversityDetail() {
                 <div className="quick-stat">
                   <span className="quick-stat-icon">📝</span>
                   <div>
-                    <div className="quick-stat-label">Reviews</div>
+                    <div className="quick-stat-label">Reseñas</div>
                     <div className="quick-stat-value">{reviews.length}</div>
                   </div>
                 </div>

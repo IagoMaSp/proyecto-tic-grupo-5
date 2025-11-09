@@ -43,7 +43,7 @@ export default function CompareCard({ university, onRemove, index }: CompareCard
         </div>
 
         <div className="compare-metric">
-          <div className="compare-metric-label">Reviews</div>
+          <div className="compare-metric-label">Reseñas</div>
           <div className="compare-metric-value">
             {university.review_count || 0}
           </div>

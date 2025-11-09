@@ -1,36 +1,29 @@
 import { useState, useEffect, useCallback } from "react";
-import * as api from "../api";
-import type { University } from "../api";
-import { useDebounce } from "../hooks/useDebounce"; // Importamos el hook existente
+import * as api from "../api.ts";
+import type { University } from "../api.ts";
+import { useDebounce } from "./useDebounce.ts"; 
+import { useAuth } from "../contexts/authContext.tsx"; 
 
-// Tipo para las opciones de ordenamiento
 export type SortOption = "qs_rating_top" | "-qs_rating_top" | "-overall_avg_rating" | "-visits_count";
 
-/**
- * Hook personalizado para manejar toda la lógica de búsqueda,
- * filtrado y obtención de datos de universidades.
- */
 export function useUniversitySearch() {
-  // Estados de los filtros
+  const { isAuthenticated } = useAuth(); 
+
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState("");
   const [faculty, setFaculty] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("qs_rating_top");
   
-  // Estados de los datos
   const [universities, setUniversities] = useState<University[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
+  const [wishlist, setWishlist] = useState(new Set<number>()); 
   
-  // Estados de la UI
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Aplicamos debounce al query de búsqueda
   const debouncedQuery = useDebounce(query, 300);
 
-  // --- Carga de Opciones de Filtros ---
-
-  const fetchCountries = useCallback(async () => {
+  const fetchFilterData = useCallback(async () => {
     try {
       const data = await api.getFilterOptions(); 
       setCountries(data.countries || []);
@@ -38,9 +31,18 @@ export function useUniversitySearch() {
       console.error("Error cargando países:", err);
       setCountries([]);
     }
-  }, []);
 
-  // --- Carga de Universidades ---
+    if (isAuthenticated) {
+      try {
+        const wishlistData = await api.getWishlist();
+        const wishlistIds = new Set(wishlistData.map(item => item.university));
+        setWishlist(wishlistIds);
+      } catch (err) {
+        console.error("Error cargando wishlist:", err);
+        setWishlist(new Set<number>());
+      }
+    }
+  }, [isAuthenticated]); 
 
   const fetchUniversities = useCallback(async () => {
     setLoading(true);
@@ -66,36 +68,37 @@ export function useUniversitySearch() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedQuery, country, faculty, sortBy]); // Depende de los filtros
+  }, [debouncedQuery, country, faculty, sortBy]); 
 
-  // --- Efectos ---
-
-  // Carga los países una vez al montar el componente
   useEffect(() => {
     document.title = "UM Exchange | Universidades";
-    fetchCountries();
-  }, [fetchCountries]);
+    fetchFilterData(); 
+  }, [fetchFilterData]);
 
-  // Vuelve a cargar las universidades cada vez que los filtros (o el query con debounce) cambian
   useEffect(() => {
     fetchUniversities();
-  }, [fetchUniversities]); // fetchUniversities ya tiene las dependencias correctas
-
-  // --- Manejadores de Eventos ---
+  }, [fetchUniversities]); 
 
   const handleClearFilters = () => {
     setCountry("");
     setFaculty("");
     setQuery("");
-    // Opcional: podrías resetear el sortBy también
-    // setSortBy("qs_rating_top"); 
   };
 
-  // --- Valores Calculados ---
+  const toggleWishlistLocal = (universityId: number) => {
+    setWishlist(prev => {
+      const newWishlist = new Set(prev);
+      if (newWishlist.has(universityId)) {
+        newWishlist.delete(universityId);
+      } else {
+        newWishlist.add(universityId);
+      }
+      return newWishlist;
+    });
+  };
 
   const activeFiltersCount = [country, faculty].filter(Boolean).length;
 
-  // Retornamos estados y manejadores de forma separada
   return {
     states: {
       query,
@@ -104,6 +107,7 @@ export function useUniversitySearch() {
       sortBy,
       universities,
       countries,
+      wishlist, 
       loading,
       error,
       activeFiltersCount
@@ -114,7 +118,8 @@ export function useUniversitySearch() {
       setFaculty,
       setSortBy,
       handleClearFilters,
-      fetchUniversities, // Exponemos para reintentar
+      fetchUniversities,
+      toggleWishlistLocal 
     }
   };
 }

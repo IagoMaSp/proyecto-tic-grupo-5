@@ -1,6 +1,8 @@
-import type { University } from "../../api";
-import { LoadingState, ErrorState, EmptyState } from "../StatusComponents";
-import UniversityCard from "./UniversityCard";
+import type { University } from "../../api.ts";
+import { LoadingState, ErrorState, EmptyState } from "../StatusComponents.tsx";
+import UniversityCard from "./UniversityCard.tsx";
+
+const UNIVERSITIES_PER_PAGE = 30;
 
 type UniversityResultsProps = {
   loading: boolean;
@@ -9,32 +11,37 @@ type UniversityResultsProps = {
   query: string;
   onRetry: () => void;
   onClearFilters: () => void;
+  wishlist: Set<number>;
+  toggleWishlistLocal: (universityId: number) => void;
+  visibleCount: number;
+  setVisibleCount: (fn: (prev: number) => number) => void;
+  totalCount: number;
 };
 
-/**
- * Componente para mostrar los resultados de la búsqueda.
- * Maneja los estados de carga, error, vacío y la lista de resultados.
- */
 export default function UniversityResults({
-  loading, error, universities, query, onRetry, onClearFilters
+  loading, error, universities, query, onRetry, onClearFilters,
+  wishlist, toggleWishlistLocal, visibleCount, setVisibleCount, totalCount
 }: UniversityResultsProps) {
   
-  // 1. Estado de Carga
   if (loading) {
     return <LoadingState />;
   }
 
-  // 2. Estado de Error
   if (error) {
     return <ErrorState message={error} onRetry={onRetry} />;
   }
 
-  // 3. Estado Vacío
   if (universities.length === 0) {
     return <EmptyState query={query} onClear={onClearFilters} />;
   }
 
-  // 4. Estado con Resultados
+  const visibleUniversities = universities.slice(0, visibleCount);
+  const canLoadMore = visibleCount < totalCount;
+
+  const handleLoadMore = () => {
+    setVisibleCount(prev => prev + UNIVERSITIES_PER_PAGE);
+  };
+
   return (
     <div className="results-section">
       <div className="results-header">
@@ -43,10 +50,24 @@ export default function UniversityResults({
         </p>
       </div>
       <div className="universities-grid">
-        {universities.map((uni, index) => (
-          <UniversityCard key={uni.id} university={uni} index={index} />
+        {visibleUniversities.map((uni, index) => (
+          <UniversityCard
+            key={uni.id}
+            university={uni}
+            index={index}
+            isInWishlist={wishlist.has(uni.id)}
+            onToggleWishlist={toggleWishlistLocal}
+          />
         ))}
       </div>
+      
+      {canLoadMore && (
+        <div className="load-more-container">
+          <button onClick={handleLoadMore} className="btn ghost">
+            Ver más universidades
+          </button>
+        </div>
+      )}
     </div>
   );
 }

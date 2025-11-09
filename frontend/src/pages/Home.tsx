@@ -1,69 +1,74 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Coverflow from "../components/universities/Coverflow";
+import Carousel from "../components/Carousel";
+import * as api from "../api";
+import type { University } from "../api";
 
 export default function Home() {
   const [isVisible, setIsVisible] = useState(false);
+  const [topUniversities, setTopUniversities] = useState<University[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     document.title = "UM Exchange | Inicio";
-    // Trigger animations after mount
     setTimeout(() => setIsVisible(true), 100);
+
+    // Cargar top universidades
+    const fetchTopUniversities = async () => {
+      try {
+        setIsLoading(true);
+        // Obtener las 10 mejores universidades por QS ranking
+        const data = await api.getUniversities({ 
+          ordering: 'qs_rating_top' 
+        });
+        setTopUniversities(data.results.slice(0, 10));
+      } catch (error) {
+        console.error("Error cargando top universidades:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTopUniversities();
   }, []);
 
-  // Placeholder: 10 destinos destacados
-  const topDestinations = [
-    { 
-      src: "https://images.unsplash.com/photo-1543353071-10c8ba85a904?q=80&w=1600&auto=format&fit=crop",
-      title: "Universidad Autónoma de Madrid",
-      subtitle: "Madrid, España"
-    },
-    { 
-      src: "https://images.unsplash.com/photo-1505764706515-aa95265c5abc?q=80&w=1600&auto=format&fit=crop",
-      title: "Pontificia Universidad Católica de Chile",
-      subtitle: "Santiago, Chile"
-    },
-    { 
-      src: "https://images.unsplash.com/photo-1473959383410-a26507b602cc?q=80&w=1600&auto=format&fit=crop",
-      title: "Universidade Nova de Lisboa",
-      subtitle: "Lisboa, Portugal"
-    },
-    { 
-      src: "https://images.unsplash.com/photo-1488747279002-c8523379faaa?q=80&w=1600&auto=format&fit=crop",
-      title: "Universidad de Navarra",
-      subtitle: "Pamplona, España"
-    },
-    { 
-      src: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1600&auto=format&fit=crop",
-      title: "Università di Bologna",
-      subtitle: "Boloña, Italia"
-    },
-    { 
-      src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1600&auto=format&fit=crop",
-      title: "Universität Wien",
-      subtitle: "Viena, Austria"
-    },
-    { 
-      src: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1600&auto=format&fit=crop",
-      title: "Universidad del Salvador",
-      subtitle: "Buenos Aires, Argentina"
-    },
-    { 
-      src: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1600&auto=format&fit=crop",
-      title: "Universidad de los Andes",
-      subtitle: "Bogotá, Colombia"
-    },
-    { 
-      src: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?q=80&w=1600&auto=format&fit=crop",
-      title: "Maastricht University",
-      subtitle: "Maastricht, Países Bajos"
-    },
-    { 
-      src: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop",
-      title: "The University of Queensland",
-      subtitle: "Brisbane, Australia"
-    },
+  // Placeholder images (fallback si no hay fotos)
+  const fallbackImages = [
+    "https://images.unsplash.com/photo-1543353071-10c8ba85a904?q=80&w=1600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1505764706515-aa95265c5abc?q=80&w=1600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1473959383410-a26507b602cc?q=80&w=1600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1488747279002-c8523379faaa?q=80&w=1600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1491553895911-0055eca6402d?q=80&w=1600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop",
   ];
+
+  // Transformar universidades para el carousel
+  const carouselItems = topUniversities.map((uni, index) => {
+    // Intentar obtener la primera foto de la universidad
+    let imageUrl = fallbackImages[index] || fallbackImages[0];
+    
+    if (uni.photos && uni.photos.length > 0) {
+      const photo = uni.photos[0];
+      if (typeof photo === 'string') {
+        const photoStr: string = photo;
+        imageUrl = photoStr.startsWith('http') ? photoStr : `/media/${photoStr}`;
+      } else if (photo && typeof photo === 'object' && 'photo' in photo) {
+        const photoUrl = (photo as any).photo;
+        imageUrl = photoUrl.startsWith('http') ? photoUrl : `/media/${photoUrl}`;
+      }
+    }
+
+    return {
+      id: uni.id,
+      src: imageUrl,
+      title: uni.name,
+      subtitle: uni.country,
+    };
+  });
 
   const features = [
     {
@@ -134,15 +139,29 @@ export default function Home() {
         </div>
       </section>
 
-      {/* COVERFLOW SECTION */}
+      {/* CAROUSEL SECTION */}
       <section className="container">
         <div className="section-header">
           <h2 className="section-title">Top destinos de intercambio UM</h2>
           <p className="section-sub">
-            Descubrí las universidades más elegidas y mejor valoradas por alumnos UM.
+            Descubrí las universidades con mejor ranking QS que tienen convenio con la UM.
           </p>
         </div>
-        <Coverflow items={topDestinations} autoPlayMs={3500} />
+        
+        {isLoading ? (
+          <div className="carousel-skeleton">
+            <div className="skeleton" style={{ height: '500px', borderRadius: '20px' }} />
+          </div>
+        ) : carouselItems.length > 0 ? (
+          <Carousel items={carouselItems} autoPlayMs={4000} />
+        ) : (
+          <div className="carousel-empty">
+            <p>No se pudieron cargar las universidades destacadas.</p>
+            <Link to="/universities" className="btn primary">
+              Ver todas las universidades
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* FEATURES SECTION */}
