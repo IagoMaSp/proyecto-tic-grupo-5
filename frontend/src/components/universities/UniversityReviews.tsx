@@ -26,7 +26,7 @@ export default function UniversityReviews({ reviews, universityName }: Universit
         <div className="empty-reviews">
           <div className="empty-reviews-icon">📝</div>
           <h3 className="empty-reviews-title">
-            Aún no hay reviews para {universityName}
+            Aún no hay reseñas para {universityName}
           </h3>
           <p className="empty-reviews-text">
             Sé el primero en compartir tu experiencia y ayudá a otros alumnos a decidir.
