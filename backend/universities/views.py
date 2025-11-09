@@ -5,7 +5,7 @@ Sin paginación: devuelve todas las universidades en una sola respuesta.
 
 # --- Importaciones ---
 from django.contrib.auth.models import User
-from django.db.models import Avg, F, ExpressionWrapper, FloatField, Count
+from django.db.models import Avg, F, ExpressionWrapper, FloatField, Count, Q
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404  
 
@@ -159,18 +159,40 @@ class UniversityViewSet(viewsets.ModelViewSet):
         """Detalle completo con reviews."""
         university = self.get_object()
         serializer = self.get_serializer(university, context={'request': request})
-        reviews = university.reviews.select_related('user', 'user__profile').order_by('-start_date')
+        
+        # --- MODIFICADO ---
+        # Filtramos las reviews que se muestran en el detalle de la universidad
+        user = self.request.user
+        if user.is_authenticated:
+            # Usuarios logueados ven aprobadas + las suyas pendientes
+            reviews_qs = Q(is_approved=True) | Q(user=user)
+        else:
+            # Anónimos solo ven aprobadas
+            reviews_qs = Q(is_approved=True)
+
+        reviews = university.reviews.filter(reviews_qs).select_related('user', 'user__profile').order_by('-start_date')
+        # --- FIN MODIFICADO ---
+        
         review_data = ReviewSerializer(reviews, many=True, context={'request': request}).data
-        latest_review = reviews.first()
+        latest_review = reviews.filter(is_approved=True).first() # El "latest" debe ser uno aprobado
         latest_date = latest_review.start_date if latest_review else None
 
         data = serializer.data
         data['reviews'] = review_data
+        
+        # Recalcular review_count y promedios solo en base a las reviews APROBADAS
+        approved_reviews_stats = university.reviews.filter(is_approved=True).aggregate(
+            total=Count('id'),
+            avg_social=Coalesce(Avg('social_rating'), 0.0, output_field=FloatField()),
+            avg_academic=Coalesce(Avg('academic_rating'), 0.0, output_field=FloatField()),
+            avg_place=Coalesce(Avg('place_rating'), 0.0, output_field=FloatField())
+        )
+        
         data['review_stats'] = {
-            'total': university.review_count,
-            'avg_social': round(university.avg_social, 2),
-            'avg_academic': round(university.avg_academic, 2),
-            'avg_place': round(university.avg_place, 2),
+            'total': approved_reviews_stats['total'],
+            'avg_social': round(approved_reviews_stats['avg_social'], 2),
+            'avg_academic': round(approved_reviews_stats['avg_academic'], 2),
+            'avg_place': round(approved_reviews_stats['avg_place'], 2),
             'latest_review_date': latest_date.isoformat() if latest_date else None
         }
         return Response(data)
@@ -207,14 +229,18 @@ class UniversityViewSet(viewsets.ModelViewSet):
 
     def _get_annotated_queryset(self):
         """Queryset optimizado con anotaciones."""
-        avg_social = Coalesce(Avg('reviews__social_rating'), 0.0, output_field=FloatField())
-        avg_academic = Coalesce(Avg('reviews__academic_rating'), 0.0, output_field=FloatField())
-        avg_place = Coalesce(Avg('reviews__place_rating'), 0.0, output_field=FloatField())
-
+        # --- MODIFICADO ---
+        # Los promedios y conteos ahora se basan SÓLO en reviews aprobadas.
+        approved_reviews = Q(reviews__is_approved=True)
+        
+        avg_social = Coalesce(Avg('reviews__social_rating', filter=approved_reviews), 0.0, output_field=FloatField())
+        avg_academic = Coalesce(Avg('reviews__academic_rating', filter=approved_reviews), 0.0, output_field=FloatField())
+        avg_place = Coalesce(Avg('reviews__place_rating', filter=approved_reviews), 0.0, output_field=FloatField())
+        
         return University.objects.prefetch_related(
             'photos', 'reviews', 'reviews__user', 'reviews__user__profile', 'faculties'
         ).annotate(
-            review_count=Count('reviews', distinct=True),
+            review_count=Count('reviews', distinct=True, filter=approved_reviews), # Contar solo aprobadas
             avg_social=avg_social,
             avg_academic=avg_academic,
             avg_place=avg_place
@@ -224,13 +250,15 @@ class UniversityViewSet(viewsets.ModelViewSet):
                 output_field=FloatField()
             )
         )
+        
     @action(detail=False, methods=['get'], url_path='most-reviewed')
     def most_reviewed(self, request):
         try:
             limit = int(request.query_params.get('limit', 10))
         except ValueError:
             limit = 10
-        annotated_qs = University.objects.annotate(review_count=Count('reviews')).order_by('-review_count')[:limit]
+        # La anotación ya filtra por reviews aprobadas gracias a _get_annotated_queryset
+        annotated_qs = self._get_annotated_queryset().order_by('-review_count')[:limit]
         serializer = self.get_serializer(annotated_qs, many=True)
         return Response(serializer.data)
         
@@ -240,12 +268,29 @@ class UniversityViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     """CRUD para reviews."""
     permission_classes = [IsAuthenticatedOrReadOnly]
-    queryset = Review.objects.all().select_related('user', 'user__profile', 'university')
+    # queryset = Review.objects.all().select_related('user', 'user__profile', 'university') # Queryset base se mueve a get_queryset
     serializer_class = ReviewSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['university', 'user']
     ordering_fields = ['start_date', 'overall_rating', 'academic_rating']
     ordering = ['-start_date']
+
+    def get_queryset(self):
+        """
+        Filtra las reviews que se devuelven.
+        - Usuarios anónimos: solo ven reviews aprobadas.
+        - Usuarios autenticados: ven todas las reviews aprobadas Y sus propias reviews pendientes.
+        """
+        base_qs = Review.objects.all().select_related('user', 'user__profile', 'university')
+        
+        user = self.request.user
+        
+        if user.is_authenticated:
+            # Muestra las aprobadas O las que son del propio usuario
+            return base_qs.filter(Q(is_approved=True) | Q(user=user))
+        
+        # Muestra solo las aprobadas para anónimos
+        return base_qs.filter(is_approved=True)
 
     def list(self, request, *args, **kwargs):
         """Lista sin paginación."""
@@ -254,17 +299,25 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def perform_create(self, serializer):
-        """Asigna el usuario autenticado."""
+        """
+        Asigna el usuario autenticado.
+        La review se creará con 'is_approved=False' por defecto (definido en el modelo).
+        """
         serializer.save(user=self.request.user)
 
     # AÑADIDO: Acción para "Mis Reseñas"
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def my_reviews(self, request):
         """
-        Retorna todas las reviews escritas por el usuario autenticado.
+        Retorna todas las reviews (aprobadas o pendientes) escritas por el usuario autenticado.
         Sin paginación.
         """
-        reviews = self.get_queryset().filter(user=request.user).order_by('-id')
+        # El queryset base (self.get_queryset()) ya no es necesario aquí, 
+        # podemos filtrar directamente del modelo.
+        reviews = Review.objects.filter(user=request.user).select_related(
+            'user', 'user__profile', 'university'
+        ).order_by('-id')
+        
         serializer = self.get_serializer(reviews, many=True)
         return Response(serializer.data)
 

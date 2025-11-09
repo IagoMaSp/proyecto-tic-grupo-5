@@ -9,7 +9,21 @@ function ReviewCard({ review }: { review: Review }) {
   };
 
   return (
-    <div className="review-card">
+    <div className={`review-card ${!review.is_approved ? 'review-pending' : ''}`}>
+      
+      {/* --- MENSAJE DE PENDIENTE --- */}
+      {!review.is_approved && (
+        <div className="review-pending-banner">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>Verificación pendiente. Esta reseña solo es visible para ti.</span>
+        </div>
+      )}
+      {/* --- FIN MENSAJE DE PENDIENTE --- */}
+
       <div className="review-header">
         <div>
           {/* Fallback por si 'university_name' es opcional */}

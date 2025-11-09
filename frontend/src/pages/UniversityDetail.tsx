@@ -40,9 +40,10 @@ export default function UniversityDetail() {
  
         // Se asume que getUniversity incrementa las visitas en el backend.
         // La llamada explícita a incrementUniversityVisits se elimina.
+        // --- CAMBIO: getUniversity ahora necesita auth para filtrar reviews ---
         const [uniData, reviewsData] = await Promise.all([
           api.getUniversity(parseInt(id)),
-          api.getReviews(parseInt(id)),
+          api.getReviews(parseInt(id)), // Esta llamada ya filtra por aprobación
         ]);
  
         setUniversity(uniData);
@@ -121,7 +122,13 @@ export default function UniversityDetail() {
       </section>
     );
   }
-
+  
+  // --- CAMBIO ---
+  // Las 'reviews' que llegan aquí ya están filtradas por el backend
+  // (solo aprobadas, o aprobadas + las mías pendientes si estoy logueado)
+  // El conteo y los promedios vienen del 'university' object, que
+  // ahora calcula esto solo en base a reviews aprobadas.
+  const approvedReviewCount = university.review_count || 0;
   const showRating = university.overall_avg_rating && university.overall_avg_rating > 0;
 
   return (
@@ -181,7 +188,7 @@ export default function UniversityDetail() {
                   <span className="quick-stat-icon">📝</span>
                   <div>
                     <div className="quick-stat-label">Reseñas</div>
-                    <div className="quick-stat-value">{reviews.length}</div>
+                    <div className="quick-stat-value">{approvedReviewCount}</div>
                   </div>
                 </div>
 

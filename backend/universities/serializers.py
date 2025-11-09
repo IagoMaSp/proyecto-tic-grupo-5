@@ -197,10 +197,12 @@ class ReviewSerializer(serializers.ModelSerializer):
             'user_profile_photo',  # Nuevo campo
             'university', 
             'university_name',
-            'overall_rating'
+            'overall_rating',
+            'is_approved', # <-- CAMPO AÑADIDO
         ]
         # El usuario se infiere del contexto de la solicitud (request)
-        read_only_fields = ('user',)
+        # 'is_approved' es read_only, solo se setea en el backend.
+        read_only_fields = ('user', 'is_approved',)
     
     def get_overall_rating(self, obj):
         """

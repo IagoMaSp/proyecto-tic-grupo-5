@@ -29,8 +29,10 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('Reviews cargadas exitosamente.'))
         except FileNotFoundError:
             self.stdout.write(self.style.ERROR(f'Archivo no encontrado: {reviews_path}'))
+            return
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Error al cargar las reviews: {e}'))
+            return
 
         reviews_created = 0
         reviews_skipped=0
@@ -53,11 +55,18 @@ class Command(BaseCommand):
                             'social_rating': row['social_rating'],
                             'academic_rating': row['academic_rating'],
                             'place_rating': row['place_rating'],
+                            'is_approved': True, # <-- CAMPO AÑADIDO
                         }
                     )
 
                     if review_created:
                         reviews_created += 1
+                    else:
+                        # Si ya existía, actualizamos 'is_approved' por si acaso
+                        if not review_obj.is_approved:
+                            review_obj.is_approved = True
+                            review_obj.save()
+                        
                 except University.DoesNotExist:
                     self.stdout.write(self.style.WARNING(f'Universidad no encontrada: {row["university"]}. Review saltada.'))
                     reviews_skipped += 1
@@ -70,7 +79,5 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(f'Error inesperado: {e}. Review saltada.'))
                     reviews_skipped += 1
                     continue
-        self.stdout.write(self.style.SUCCESS(f'Reviews creadas: {reviews_created}'))
+        self.stdout.write(self.style.SUCCESS(f'Reviews creadas/actualizadas: {reviews_created}'))
         self.stdout.write(self.style.WARNING(f'Reviews saltadas: {reviews_skipped}'))
-                    
-                        
