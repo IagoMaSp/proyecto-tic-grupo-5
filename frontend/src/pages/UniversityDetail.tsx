@@ -26,31 +26,33 @@ export default function UniversityDetail() {
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return;
-  
+ 
       try {
         setLoading(true);
         setError(null);
-  
+ 
+        // Lógica de incremento corregida
+        // Se ejecuta solo una vez gracias al useRef
+        if (!hasIncremented.current) {
+          hasIncremented.current = true; // Marcar como incrementado INMEDIATAMENTE
+          await api.incrementUniversityVisits(parseInt(id));
+        }
+ 
         const [uniData, reviewsData] = await Promise.all([
           api.getUniversity(parseInt(id)),
           api.getReviews(parseInt(id)),
         ]);
-  
+ 
         setUniversity(uniData);
         setReviews(reviewsData);
-  
-        // Evita el doble incremento en StrictMode
-        const hasVisited = sessionStorage.getItem(`visited-${id}`);
-        if (!hasVisited) {
-          await api.incrementUniversityVisits(parseInt(id));
-          sessionStorage.setItem(`visited-${id}`, "true");
-        }
-  
+ 
+        // La lógica de sessionStorage ya no es necesaria
+ 
         if (isAuthenticated) {
           const inWishlist = await api.isInWishlist(parseInt(id));
           setIsInWishlist(inWishlist);
         }
-  
+ 
         document.title = `${uniData.name} | UM Exchange`;
       } catch (err) {
         console.error("Error fetching university:", err);
@@ -59,9 +61,9 @@ export default function UniversityDetail() {
         setLoading(false);
       }
     };
-  
+ 
     fetchData();
-  }, [id, isAuthenticated]);  
+  }, [id, isAuthenticated]);
   
   const handleWishlistToggle = async () => {
     if (!isAuthenticated || !id) return;

@@ -155,14 +155,14 @@
   text-align: center;
 }
 
-.stat-value {
+.stat-value-auth {
   font-size: 28px;
   font-weight: 900;
   color: white;
   margin-bottom: 4px;
 }
 
-.stat-label {
+.stat-label-auth {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;

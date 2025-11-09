@@ -35,3 +35,5 @@
 
 /* University Details */
 @import url('./pages/_university-details.css');
+
+@import url('./components/_compare.css')

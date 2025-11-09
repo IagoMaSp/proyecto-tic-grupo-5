@@ -58,8 +58,8 @@ export default function AuthBranding({
           <div className="brand-stats">
             {stats.map((stat, i) => (
               <div key={i} className="stat-item">
-                <div className="stat-value">{stat.value}</div>
-                <div className="stat-label">{stat.label}</div>
+                <div className="stat-value-auth">{stat.value}</div>
+                <div className="stat-label-auth">{stat.label}</div>
               </div>
             ))}
           </div>
