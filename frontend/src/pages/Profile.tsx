@@ -19,53 +19,63 @@ export default function ProfilePage() {
 
   // ✅ Función para refrescar wishlist
   const refreshWishlist = async () => {
+  try {
+    console.log('[Profile] 🔄 Llamando a getWishlistWithDetails...');
+    const wishlistData = await api.getWishlistWithDetails();
+    console.log('[Profile] ✅ Wishlist recibida:', wishlistData);
+    console.log('[Profile] ¿Es array?', Array.isArray(wishlistData));
+    setUserWishlist(wishlistData || []);
+  } catch (error) {
+    console.error("[Profile] ❌ Error al refrescar wishlist:", error);
+    setUserWishlist([]);
+  }
+};
+
+  useEffect(() => {
+  document.title = "UM Exchange | Mi Perfil";
+
+  const fetchData = async () => {
+    if (!isAuthenticated) {
+      setLoadingData(false);
+      return;
+    }
+
     try {
-      const wishlistData = await api.getWishlistWithDetails();
-      setUserWishlist(wishlistData || []);
+      setLoadingData(true);
+      console.log("[Profile] Iniciando fetch de datos...");
+
+      // 1. Pedir Reseñas
+      try {
+        const reviewsData = await api.getUserReviews();
+        console.log("[Profile] Reseñas recibidas:", reviewsData);
+        setUserReviews(reviewsData || []);
+      } catch (error) {
+        console.error("[Profile] Error al fetchear REVIEWS:", error);
+        setUserReviews([]);
+      }
+
+      // 2. Pedir Wishlist - BLOQUE SEPARADO
+      try {
+        console.log('[Profile] 🔄 Iniciando refreshWishlist...');
+        await refreshWishlist();
+        console.log('[Profile] ✅ refreshWishlist completado');
+      } catch (error) {
+        console.error("[Profile] ❌ Error al fetchear WISHLIST:", error);
+        setUserWishlist([]);
+      }
+
     } catch (error) {
-      console.error("[Profile] Error al refrescar wishlist:", error);
-      setUserWishlist([]);
+      console.error("[Profile] Error en el wrapper de fetchData:", error);
+    } finally {
+      setLoadingData(false);
+      console.log("[Profile] Fetch finalizado, loading=false.");
     }
   };
 
-  useEffect(() => {
-    document.title = "UM Exchange | Mi Perfil";
-
-    const fetchData = async () => {
-      if (!isAuthenticated) {
-        setLoadingData(false);
-        return;
-      }
-
-      try {
-        setLoadingData(true);
-        console.log("[Profile] Iniciando fetch de datos...");
-
-        // 1. Pedir Reseñas
-        try {
-          const reviewsData = await api.getUserReviews();
-          console.log("[Profile] Reseñas recibidas:", reviewsData);
-          setUserReviews(reviewsData || []);
-        } catch (error) {
-          console.error("[Profile] Error al fetchear REVIEWS:", error);
-          setUserReviews([]);
-        }
-
-        // 2. Pedir Wishlist
-        await refreshWishlist();
-
-      } catch (error) {
-        console.error("[Profile] Error en el wrapper de fetchData:", error);
-      } finally {
-        setLoadingData(false);
-        console.log("[Profile] Fetch finalizado, loading=false.");
-      }
-    };
-
-    if (!authLoading) {
-      fetchData();
-    }
-  }, [isAuthenticated, authLoading, activeTab]); // ✅ Agregar activeTab
+  if (!authLoading) {
+    fetchData();
+  }
+}, [isAuthenticated, authLoading, activeTab]);
 
   const renderLoading = () => (
     <div className="loading-container">
@@ -131,7 +141,7 @@ export default function ProfilePage() {
               className={`nav-item ${activeTab === "wishlist" ? "active" : ""}`}
               onClick={() => setActiveTab("wishlist")}
             >
-              Mi Wishlist ({userWishlist.length})
+              Lista de Deseos ({userWishlist.length})
             </button>
           </nav>
 

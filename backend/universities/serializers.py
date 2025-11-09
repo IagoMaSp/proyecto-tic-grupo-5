@@ -433,18 +433,24 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class WishlistSerializer(serializers.ModelSerializer):
     """
-    Serializador para wishlist.
-    Incluye info básica de la universidad para mostrar en el frontend.
+    Serializer para Wishlist que incluye los detalles de la universidad.
     """
-    
-    # Info de la universidad (nested read-only)
-    university_details = UniversityListSerializer(source='university', read_only=True)
+    university_details = serializers.SerializerMethodField()
     
     class Meta:
         model = Wishlist
-        fields = ['id', 'user', 'university', 'university_details', 'created_at', 'updated_at']
-        read_only_fields = ['user', 'created_at', 'updated_at', 'university_details']
-
+        fields = ['id', 'user', 'university', 'created_at', 'updated_at', 'university_details']
+        read_only_fields = ['user', 'created_at', 'updated_at']
+    
+    def get_university_details(self, obj):
+        """
+        Retorna los detalles completos de la universidad asociada.
+        """
+        from .serializers import UniversitySerializer  # Import local para evitar ciclos
+        
+        if obj.university:
+            return UniversitySerializer(obj.university).data
+        return None
 
 class WishlistCreateSerializer(serializers.ModelSerializer):
     """

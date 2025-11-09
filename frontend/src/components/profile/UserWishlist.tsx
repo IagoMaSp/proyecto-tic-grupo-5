@@ -9,8 +9,8 @@ export default function UserWishlist({ wishlistItems }: UserWishlistProps) {
   if (wishlistItems.length === 0) {
     return (
       <div className="empty-state">
-        <h2 className="section-title mb-16">Mi Wishlist</h2>
-        <p>Tu wishlist está vacía.</p>
+        <h2 className="section-title mb-16">Lista de Deseos</h2>
+        <p>Tu lista de deseos está vacía.</p>
         <p>Explorá las <a href="/universities">universidades</a> y guardá tus favoritas.</p>
       </div>
     );
@@ -18,7 +18,7 @@ export default function UserWishlist({ wishlistItems }: UserWishlistProps) {
 
   return (
     <div>
-      <h2 className="section-title mb-24">Mi Wishlist</h2>
+      <h2 className="section-title mb-24">Lista de Deseos</h2>
       <div className="wishlist-grid">
         {wishlistItems.map((item) => (
           <WishlistCard key={item.id} item={item.university_details} />
