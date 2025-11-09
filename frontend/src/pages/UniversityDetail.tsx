@@ -65,6 +65,8 @@ export default function UniversityDetail() {
   
   const handleWishlistToggle = async () => {
     if (!isAuthenticated || !id) return;
+     const previousState = isInWishlist;
+    setIsInWishlist(!isInWishlist);
     try {
       if (isInWishlist) {
         await api.removeFromWishlist(parseInt(id));
@@ -73,8 +75,18 @@ export default function UniversityDetail() {
         await api.addToWishlist(parseInt(id));
         setIsInWishlist(true);
       }
+      const wishlist = await api.getWishlist();
+      const inWishlist = wishlist.some(item => item.university === parseInt(id));
+      setIsInWishlist(inWishlist);
     } catch (err) {
       console.error("Error toggling wishlist:", err);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+    if (errorMsg.includes("ya está") || errorMsg.includes("400")) {
+      setIsInWishlist(true);
+    } else {
+      // Revertir al estado anterior si hay otro error
+      setIsInWishlist(previousState);
+    }
     }
   };
 

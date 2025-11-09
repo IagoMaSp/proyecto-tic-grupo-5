@@ -438,12 +438,12 @@ class WishlistSerializer(serializers.ModelSerializer):
     """
     
     # Info de la universidad (nested read-only)
-    university_detail = UniversityListSerializer(source='university', read_only=True)
+    university_details = UniversityListSerializer(source='university', read_only=True)
     
     class Meta:
         model = Wishlist
-        fields = ['id', 'user', 'university', 'university_detail', 'created_at', 'updated_at']
-        read_only_fields = ['user', 'created_at', 'updated_at', 'university_detail']
+        fields = ['id', 'user', 'university', 'university_details', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'created_at', 'updated_at', 'university_details']
 
 
 class WishlistCreateSerializer(serializers.ModelSerializer):

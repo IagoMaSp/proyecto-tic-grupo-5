@@ -90,8 +90,9 @@ export interface Wishlist {
   user: number;
   university: number;
   created_at: string;
+  updated_at: string;
   // Añadido para que coincida con el serializer
-  university_detail?: University; 
+  university_details?: University; 
 }
 
 export interface Profile {
@@ -384,11 +385,5 @@ export const getWishlistWithDetails = async (): Promise<WishlistWithDetails[]> =
   // 1. Obtener la lista de la wishlist
   const wishlistItems = await getWishlist(); // Esto ya tiene university_detail
   
-  // 2. Mapear para asegurar el formato
-  const detailedItems = wishlistItems.map(item => ({
-    ...item,
-    university_details: item.university_detail as University
-  }));
-  
-  return detailedItems;
+  return wishlistItems as WishlistWithDetails[];
 };
