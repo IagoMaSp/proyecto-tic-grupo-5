@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 interface WishlistButtonProps {
   isInWishlist: boolean;
@@ -10,11 +10,11 @@ interface WishlistButtonProps {
 export default function WishlistButton({ isInWishlist, isAuthenticated, onToggle }: WishlistButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const location = useLocation(); 
 
   const handleClick = async () => {
     if (!isAuthenticated) {
       setShowLoginPrompt(true);
-      setTimeout(() => setShowLoginPrompt(false), 3000);
       return;
     }
 
@@ -36,7 +36,7 @@ export default function WishlistButton({ isInWishlist, isAuthenticated, onToggle
         <p className="wishlist-prompt-text">
           Creá tu cuenta para guardar universidades en tu wishlist
         </p>
-        <Link to="/login" className="btn primary full-width">
+        <Link to="/login" state={{ from: location }} className="btn primary full-width">
           Iniciar sesión
         </Link>
       </div>
@@ -72,12 +72,6 @@ export default function WishlistButton({ isInWishlist, isAuthenticated, onToggle
           </>
         )}
       </button>
-
-      {showLoginPrompt && (
-      <div className="wishlist-tooltip">
-        Necesitás <Link to="/login">iniciar sesión</Link> para guardar universidades
-      </div>
-    )}
 
       {isInWishlist && (
         <p className="wishlist-success-msg">

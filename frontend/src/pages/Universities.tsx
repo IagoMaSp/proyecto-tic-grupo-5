@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { useUniversitySearch } from "../hooks/useUniversitySearch";
-import UniversityFilters from "../components/universities/UniversitySearchFilters";
-import UniversityResults from "../components/universities/UniversityResults";
+import { useUniversitySearch } from "../hooks/useUniversitySearch.ts";
+import UniversityFilters from "../components/universities/UniversitySearchFilters.tsx";
+import UniversityResults from "../components/universities/UniversityResults.tsx";
+
+const UNIVERSITIES_PER_PAGE = 30;
 
 export default function Universities() {
-  // El único estado que se maneja aquí es el de la UI (mostrar/ocultar filtros)
   const [showFilters, setShowFilters] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(UNIVERSITIES_PER_PAGE);
   
-  // Toda la lógica de datos y filtros viene de nuestro custom hook
   const { states, handlers } = useUniversitySearch();
 
-  // Preparamos los props para los componentes hijos
   const filterProps = {
     ...states,
     ...handlers,
@@ -25,12 +25,16 @@ export default function Universities() {
     query: states.query,
     onRetry: handlers.fetchUniversities,
     onClearFilters: handlers.handleClearFilters,
+    wishlist: states.wishlist,
+    toggleWishlistLocal: handlers.toggleWishlistLocal,
+    visibleCount,
+    setVisibleCount,
+    totalCount: states.universities.length,
   };
 
   return (
     <section className="container">
       <div className="card">
-        {/* Header */}
         <div className="mb-32">
           <h1 className="section-title">Universidades con convenio</h1>
           <p className="section-sub">
@@ -38,10 +42,8 @@ export default function Universities() {
           </p>
         </div>
 
-        {/* Componente de Filtros */}
         <UniversityFilters {...filterProps} />
         
-        {/* Componente de Resultados */}
         <UniversityResults {...resultsProps} />
         
       </div>
