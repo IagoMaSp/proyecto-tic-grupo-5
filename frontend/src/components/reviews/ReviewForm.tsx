@@ -1,9 +1,9 @@
-import { useState} from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 import * as api from "../../api.ts";
 import type { Review, University } from "../../api.ts";
 import RatingSlider from "./RatingSlider.tsx";
-import UniversitySelectionModal from "./UniversitySelectionModal.tsx";
+import UniversitySearchInput from "./UniversitySearchInput.tsx";
 
 type ReviewFormData = {
   university_id: number | null;
@@ -42,8 +42,8 @@ export default function ReviewForm({ onReviewCreated }: ReviewFormProps) {
   };
   const [formData, setFormData] = useState<ReviewFormData>(initialState);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -60,13 +60,13 @@ export default function ReviewForm({ onReviewCreated }: ReviewFormProps) {
   };
 
   const handleSelectUniversity = (university: University) => {
+    setSelectedUniversity(university);
     setFormData((prev) => ({
       ...prev,
       university_id: university.id,
       university_name: university.name,
     }));
     setErrors((prev) => ({ ...prev, university: undefined }));
-    setIsModalOpen(false);
   };
 
   const validateForm = (): boolean => {
@@ -122,6 +122,7 @@ export default function ReviewForm({ onReviewCreated }: ReviewFormProps) {
       const newReview = await api.createReview(reviewData);
       onReviewCreated(newReview);
       setFormData(initialState);
+      setSelectedUniversity(null);
     } catch (error) {
       console.error("Error creating review:", error);
       setErrors({
@@ -134,157 +135,129 @@ export default function ReviewForm({ onReviewCreated }: ReviewFormProps) {
   };
 
   return (
-    <>
-      <form onSubmit={handleSubmit}>
-        <h3 className="section-title mb-16">Creá tu Reseña</h3>
-        <div className="review-form-grid">
-          <div className="form-group full-width">
-            <label htmlFor="university" className="form-label">
-              Universidad
-            </label>
-            {/* MODIFICACIÓN: El onClick ahora está en el div wrapper */}
-            <div
-              className="university-selector"
-              onClick={() => setIsModalOpen(true)}
-              style={{ cursor: "pointer" }}
-            >
-              <input
-                type="text"
-                id="university"
-                name="university"
-                className={`form-input ${errors.university ? "error" : ""}`}
-                value={formData.university_name}
-                placeholder="Seleccioná una universidad"
-                readOnly
-                style={{ cursor: "pointer" }} // Añadido para mejor UX
-              />
-              <button
-                type="button"
-                className="btn ghost"
-                // El onClick se movió al div wrapper
-              >
-                Elegir
-              </button>
-            </div>
-            {errors.university && (
-              <span className="error-message">{errors.university}</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="start_date" className="form-label">
-              Fecha de Inicio
-            </label>
-            <input
-              type="date"
-              id="start_date"
-              name="start_date"
-              className={`form-input ${errors.start_date ? "error" : ""}`}
-              value={formData.start_date}
-              onChange={handleChange}
-            />
-            {errors.start_date && (
-              <span className="error-message">{errors.start_date}</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="end_date" className="form-label">
-              Fecha de Fin
-            </label>
-            <input
-              type="date"
-              id="end_date"
-              name="end_date"
-              className={`form-input ${errors.end_date ? "error" : ""}`}
-              value={formData.end_date}
-              onChange={handleChange}
-            />
-            {errors.end_date && (
-              <span className="error-message">{errors.end_date}</span>
-            )}
-          </div>
-
-          <div className="form-group full-width">
-            <label htmlFor="ratings" className="form-label">
-              Ratings (0.0 a 5.0)
-            </label>
-            <div className="ratings-grid">
-              <RatingSlider
-                label="Social"
-                id="social_rating"
-                value={formData.social_rating}
-                onChange={(e) =>
-                  handleRatingChange("social_rating", e.target.value)
-                }
-              />
-              <RatingSlider
-                label="Académico"
-                id="academic_rating"
-                value={formData.academic_rating}
-                onChange={(e) =>
-                  handleRatingChange("academic_rating", e.target.value)
-                }
-              />
-              <RatingSlider
-                label="Geográfico (Lugar/Ciudad)"
-                id="place_rating"
-                value={formData.place_rating}
-                onChange={(e) =>
-                  handleRatingChange("place_rating", e.target.value)
-                }
-              />
-            </div>
-          </div>
-
-          <div className="form-group full-width">
-            <label htmlFor="description" className="form-label">
-              Descripción (mín. 20 caracteres)
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              className={`form-input ${errors.description ? "error" : ""}`}
-              rows={5}
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Contá tu experiencia, qué te gustó, qué no, etc."
-              style={{ height: "auto", paddingTop: "12px" }}
-            />
-            {errors.description && (
-              <span className="error-message">{errors.description}</span>
-            )}
-          </div>
-
-          {errors.general && (
-            <div className="alert-error full-width">{errors.general}</div>
+    <form onSubmit={handleSubmit}>
+      <h3 className="section-title mb-16">Creá tu Reseña</h3>
+      <div className="review-form-grid">
+        <div className="form-group full-width">
+          <label htmlFor="university" className="form-label">
+            Universidad
+          </label>
+          <UniversitySearchInput
+            onSelect={handleSelectUniversity}
+            placeholder="Buscar universidad..."
+            selectedUniversity={selectedUniversity}
+          />
+          {errors.university && (
+            <span className="error-message">{errors.university}</span>
           )}
+        </div>
 
-          <div className="form-group full-width">
-            <button
-              type="submit"
-              className="btn primary"
-              disabled={isSubmitting}
-              style={{ width: "100%", justifyContent: "center" }}
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="spinner" /> Enviando...
-                </>
-              ) : (
-                "Enviar Reseña"
-              )}
-            </button>
+        <div className="form-group">
+          <label htmlFor="start_date" className="form-label">
+            Fecha de Inicio
+          </label>
+          <input
+            type="date"
+            id="start_date"
+            name="start_date"
+            className={`form-input ${errors.start_date ? "error" : ""}`}
+            value={formData.start_date}
+            onChange={handleChange}
+          />
+          {errors.start_date && (
+            <span className="error-message">{errors.start_date}</span>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="end_date" className="form-label">
+            Fecha de Fin
+          </label>
+          <input
+            type="date"
+            id="end_date"
+            name="end_date"
+            className={`form-input ${errors.end_date ? "error" : ""}`}
+            value={formData.end_date}
+            onChange={handleChange}
+          />
+          {errors.end_date && (
+            <span className="error-message">{errors.end_date}</span>
+          )}
+        </div>
+
+        <div className="form-group full-width">
+          <label htmlFor="ratings" className="form-label">
+            Ratings (0.0 a 5.0)
+          </label>
+          <div className="ratings-grid">
+            <RatingSlider
+              label="Social"
+              id="social_rating"
+              value={formData.social_rating}
+              onChange={(e) =>
+                handleRatingChange("social_rating", e.target.value)
+              }
+            />
+            <RatingSlider
+              label="Académico"
+              id="academic_rating"
+              value={formData.academic_rating}
+              onChange={(e) =>
+                handleRatingChange("academic_rating", e.target.value)
+              }
+            />
+            <RatingSlider
+              label="Geográfico (Lugar/Ciudad)"
+              id="place_rating"
+              value={formData.place_rating}
+              onChange={(e) =>
+                handleRatingChange("place_rating", e.target.value)
+              }
+            />
           </div>
         </div>
-      </form>
 
-      {isModalOpen && (
-        <UniversitySelectionModal
-          onSelect={handleSelectUniversity}
-          onClose={() => setIsModalOpen(false)}
-        />
-      )}
-    </>
+        <div className="form-group full-width">
+          <label htmlFor="description" className="form-label">
+            Descripción (mín. 20 caracteres)
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            className={`form-input ${errors.description ? "error" : ""}`}
+            rows={5}
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Contá tu experiencia, qué te gustó, qué no, etc."
+            style={{ height: "auto", paddingTop: "12px" }}
+          />
+          {errors.description && (
+            <span className="error-message">{errors.description}</span>
+          )}
+        </div>
+
+        {errors.general && (
+          <div className="alert-error full-width">{errors.general}</div>
+        )}
+
+        <div className="form-group full-width">
+          <button
+            type="submit"
+            className="btn primary"
+            disabled={isSubmitting}
+            style={{ width: "100%", justifyContent: "center" }}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="spinner" /> Enviando...
+              </>
+            ) : (
+              "Enviar Reseña"
+            )}
+          </button>
+        </div>
+      </div>
+    </form>
   );
 }

@@ -132,31 +132,31 @@ export interface UniversityListResponse {
 }
 
 export const getUniversities = async (filters?: UniversityFilters): Promise<UniversityListResponse> => {
-  const params = new URLSearchParams();
-  
-  if (filters) {
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== '') {
-        params.append(key, String(value));
-      }
-    });
-  }
-  
-  const url = `${API_BASE_URL}/universities/?${params.toString()}`;
-  const response = await fetch(url, {
-    headers: getHeaders(),
-  });
-  
+  const params = new URLSearchParams();
+  
+  if (filters) {
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') {
+        params.append(key, String(value));
+      }
+    });
+  }
+  
+  const url = `${API_BASE_URL}/universities/?${params.toString()}`;
+  const response = await fetch(url, {
+    headers: getHeaders(),
+  });
+  
   // El backend siempre devuelve el objeto, incluso si no hay filtros
-  return handleResponse(response);
+  return handleResponse(response);
 };
 
 export const getUniversity = async (id: number): Promise<University> => {
-  const response = await fetch(`${API_BASE_URL}/universities/${id}/`, {
-    headers: getHeaders(),
-  });
-  
-  return handleResponse(response);
+  const response = await fetch(`${API_BASE_URL}/universities/${id}/`, {
+    headers: getHeaders(),
+  });
+  
+  return handleResponse(response);
 };
 
 export const getTopUniversities = async (limit = 10): Promise<UniversityListResponse> => {
@@ -170,15 +170,10 @@ export const getTopUniversities = async (limit = 10): Promise<UniversityListResp
   return handleResponse(response);
 };
 
-/**
- * AGREGAR ESTAS FUNCIONES AL ARCHIVO api.ts EXISTENTE
- * Copiar después de la función getUniversity()
- */
-
 // Incrementar contador de visitas
 export const incrementUniversityVisits = async (id: number): Promise<void> => {
   try {
-    await fetch(`${API_BASE_URL}/universities/${id}/increment_visits/`, {
+    await fetch(`${API_BASE_URL}/universities/${id}/increment-visits/`, {
       method: 'POST',
       headers: getHeaders(),
     });
