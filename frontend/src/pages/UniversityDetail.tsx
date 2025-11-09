@@ -65,22 +65,39 @@ export default function UniversityDetail() {
     };
  
     fetchData();
-  }, [id, isAuthenticated]); 
- 
-  const handleWishlistToggle = async () => {
-    if (!isAuthenticated || !id) return;
-    try {
-      if (isInWishlist) {
-        await api.removeFromWishlist(parseInt(id));
-        setIsInWishlist(false);
-      } else {
-        await api.addToWishlist(parseInt(id));
-        setIsInWishlist(true);
+  }, [id, isAuthenticated]);  
+  
+    const handleWishlistToggle = async () => {
+      if (!isAuthenticated || !id) return;
+      
+      const previousState = isInWishlist;
+      setIsInWishlist(!isInWishlist); // Actualización optimista
+      
+      try {
+        if (previousState) {
+          // Eliminar de wishlist
+          console.log('[UniversityDetail] Eliminando universidad de wishlist...');
+          await api.removeFromWishlist(parseInt(id));
+          console.log('[UniversityDetail] ✅ Universidad eliminada correctamente');
+        } else {
+          // Agregar a wishlist
+          console.log('[UniversityDetail] Agregando universidad a wishlist...');
+          await api.addToWishlist(parseInt(id));
+          console.log('[UniversityDetail] ✅ Universidad agregada correctamente');
+        }
+      } catch (err) {
+        console.error('[UniversityDetail] ❌ Error toggling wishlist:', err);
+        
+        // Revertir al estado anterior
+        setIsInWishlist(previousState);
+        
+        // Mostrar mensaje de error al usuario (opcional)
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        
+        // Si quieres mostrar un toast o alerta, hazlo aquí
+        alert(`Error: ${errorMsg}`);
       }
-    } catch (err) {
-      console.error("Error toggling wishlist:", err);
-    }
-  };
+    };
 
   if (loading) {
     return (
