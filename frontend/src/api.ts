@@ -90,8 +90,9 @@ export interface Wishlist {
   user: number;
   university: number;
   created_at: string;
+  updated_at: string;
   // Añadido para que coincida con el serializer
-  university_detail?: University; 
+  university_details?: University; 
 }
 
 export interface Profile {
@@ -232,11 +233,25 @@ export const getUserReviews = async (): Promise<Review[]> => {
 // ===== WISHLIST =====
 
 export const getWishlist = async (): Promise<Wishlist[]> => {
-  const response = await fetch(`${API_BASE_URL}/wishlists/`, {
-    headers: getHeaders(true),
-  });
-  
-  return handleResponse(response);
+  const response = await fetch(`${API_BASE_URL}/wishlists/`, {
+    headers: getHeaders(true),
+  });
+  const data = await handleResponse(response);
+  console.log('[API] getWishlist response:', data);
+  
+  // ✅ Verificar si es una respuesta paginada
+  if (data && typeof data === 'object' && 'results' in data) {
+    console.log('[API] Respuesta paginada detectada, extrayendo results');
+    return data.results;
+  }
+  
+  // Si ya es un array, devolverlo tal cual
+  if (Array.isArray(data)) {
+    return data;
+  }
+  
+  console.warn('[API] getWishlist formato inesperado:', data);
+  return [];
 };
 
 export const addToWishlist = async (universityId: number): Promise<Wishlist> => {
@@ -251,16 +266,22 @@ export const addToWishlist = async (universityId: number): Promise<Wishlist> => 
 };
 
 export const removeFromWishlist = async (universityId: number): Promise<void> => {
-  // MODIFICACIÓN: Usar el endpoint 'remove-by-university' y enviar ID de universidad
-  const response = await fetch(`${API_BASE_URL}/wishlists/remove-by-university/`, {
-    method: 'POST',
-    headers: getHeaders(true),
-    body: JSON.stringify({ university: universityId })
-  });
-  
-  if (!response.ok && response.status !== 204) {
-    throw new Error(`HTTP ${response.status}`);
-  }
+  const response = await fetch(
+    `${API_BASE_URL}/wishlists/remove-by-university/?university=${universityId}`,
+    {
+      method: 'DELETE',
+      headers: getHeaders(true),
+      // NO enviar body
+    }
+  );
+  
+  // Aceptar tanto 204 como 200
+  if (!response.ok && response.status !== 204 && response.status !== 404) {
+    console.log('[API] Universidad eliminada de wishlist correctamente');
+    return;}
+
+    const errorData = await response.json().catch(() => ({ detail: 'Error al eliminar' }));
+    throw new Error(errorData.detail || `HTTP ${response.status}`);
 };
 
 // ===== AUTH =====
@@ -376,14 +397,45 @@ export const getFilterOptions = async (): Promise<UniversityFilterOptions> => {
  * de cada universidad, ya que la API base de wishlist solo devuelve IDs.
  */
 export const getWishlistWithDetails = async (): Promise<WishlistWithDetails[]> => {
-  // 1. Obtener la lista de la wishlist
-  const wishlistItems = await getWishlist(); // Esto ya tiene university_detail
-  
-  // 2. Mapear para asegurar el formato
-  const detailedItems = wishlistItems.map(item => ({
-    ...item,
-    university_details: item.university_detail as University
-  }));
-  
-  return detailedItems;
+  try {
+    const wishlistItems = await getWishlist();
+    
+    console.log('[API] getWishlistWithDetails - items recibidos:', wishlistItems);
+    
+    // ✅ Verificar que sea un array
+    if (!Array.isArray(wishlistItems)) {
+      console.error('[API] getWishlist no devolvió un array:', wishlistItems);
+      return [];
+    }
+    
+    // ✅ Si el backend ya incluye university_details, devolverlo directamente
+    if (wishlistItems.length > 0 && wishlistItems[0].university_details) {
+      console.log('[API] Backend ya incluye university_details');
+      return wishlistItems as WishlistWithDetails[];
+    }
+    
+    // ✅ Si no, hacer fetch manual de cada universidad
+    console.log('[API] Fetching detalles de universidades manualmente...');
+    const detailedItems = await Promise.all(
+      wishlistItems.map(async (item) => {
+        try {
+          const universityDetails = await getUniversity(item.university);
+          return {
+            ...item,
+            university_details: universityDetails
+          } as WishlistWithDetails;
+        } catch (error) {
+          console.error(`[API] Error al fetch universidad ${item.university}:`, error);
+          return null;
+        }
+      })
+    );
+    
+    // Filtrar items null (por si alguna universidad falló)
+    return detailedItems.filter((item): item is WishlistWithDetails => item !== null);
+    
+  } catch (error) {
+    console.error('[API] Error en getWishlistWithDetails:', error);
+    return [];
+  }
 };
