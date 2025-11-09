@@ -80,6 +80,7 @@ export interface Review {
   overall_rating: number;
   user: number;
   university: number;
+  is_approved: boolean; // <-- CAMPO AÑADIDO
   username?: string;
   university_name?: string;
   user_profile_photo?: string | null;
@@ -154,7 +155,7 @@ export const getUniversities = async (filters?: UniversityFilters): Promise<Univ
 
 export const getUniversity = async (id: number): Promise<University> => {
   const response = await fetch(`${API_BASE_URL}/universities/${id}/`, {
-    headers: getHeaders(),
+    headers: getHeaders(true), // <-- CAMBIO: Enviar auth para que filtre bien las reviews
   });
   
   return handleResponse(response);
@@ -202,7 +203,7 @@ export const getReviews = async (universityId?: number): Promise<Review[]> => {
     : `${API_BASE_URL}/reviews/`;
     
   const response = await fetch(url, {
-    headers: getHeaders(),
+    headers: getHeaders(true), // <-- CAMBIO: Enviar auth para que filtre bien
   });
   
   return handleResponse(response);

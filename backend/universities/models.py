@@ -232,6 +232,10 @@ class Review(models.Model):
         blank=False
     )
     
+    # --- CAMPO NUEVO ---
+    # Se añade el campo para la aprobación. Por defecto es False.
+    is_approved = models.BooleanField(default=False)
+    
     # Relaciones
     user = models.ForeignKey(
         User,
