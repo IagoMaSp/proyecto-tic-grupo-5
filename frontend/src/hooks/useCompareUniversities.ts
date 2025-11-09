@@ -69,12 +69,15 @@ export function useCompareUniversities() {
     }
 
     try {
+      // Obtener la universidad completa con todas las anotaciones
+      const fullUniversity = await api.getUniversity(university.id);
+      
       // Obtener las últimas 3 reviews
       const reviews = await api.getReviews(university.id);
       const latestReviews = reviews.slice(0, 3);
 
       const compareUni: CompareUniversity = {
-        ...university,
+        ...fullUniversity,
         latestReviews
       };
 

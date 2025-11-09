@@ -31,7 +31,8 @@ export default function CompareCard({ university, onRemove, index }: CompareCard
         <div className="compare-card-country">📍 {university.country}</div>
       </div>
 
-      <div className="compare-card-metrics">
+      <div className="compare-card-body">
+        <div className="compare-card-metrics">
         <div className="compare-metric">
           <div className="compare-metric-label">Ranking QS</div>
           <div className="compare-metric-value compare-metric-qs">
@@ -119,6 +120,7 @@ export default function CompareCard({ university, onRemove, index }: CompareCard
           <polyline points="12 5 19 12 12 19"></polyline>
         </svg>
       </Link>
+    </div>
     </div>
   );
 }
