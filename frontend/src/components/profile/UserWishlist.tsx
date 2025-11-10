@@ -10,7 +10,7 @@ export default function UserWishlist({ wishlistItems }: UserWishlistProps) {
     return (
       <div className="empty-state">
         <h2 className="section-title mb-16">Lista de Deseos</h2>
-        <p>Tu lista de deseos está vacía.</p>
+        <p>Tu Lista de Deseos está vacía.</p>
         <p>Explorá las <a href="/universities">universidades</a> y guardá tus favoritas.</p>
       </div>
     );

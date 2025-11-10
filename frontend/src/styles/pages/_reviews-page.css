@@ -115,3 +115,21 @@
   font-weight: 600;
   margin-bottom: 16px;
 }
+
+/* NUEVO: Alerta de éxito */
+.alert-success {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f0fdf4; /* green-50 */
+  border: 1px solid #bbf7d0; /* green-200 */
+  border-radius: 12px;
+  color: #15803d; /* green-700 */
+  font-size: 0.9rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.mb-16 {
+  margin-bottom: 16px;
+}

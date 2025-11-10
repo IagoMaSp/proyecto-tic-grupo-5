@@ -128,6 +128,7 @@ export default function UniversityDetail() {
   // (solo aprobadas, o aprobadas + las mías pendientes si estoy logueado)
   // El conteo y los promedios vienen del 'university' object, que
   // ahora calcula esto solo en base a reviews aprobadas.
+  // <UniversityPhotoGallery university={university} />
   const approvedReviewCount = university.review_count || 0;
   const showRating = university.overall_avg_rating && university.overall_avg_rating > 0;
 
@@ -149,7 +150,7 @@ export default function UniversityDetail() {
         <div className="university-detail-grid">
           <div className="university-main-col">
             <UniversityInfo university={university} />
-            <UniversityPhotoGallery university={university} />
+  
             <UniversityReviews reviews={reviews} universityName={university.name} />
           </div>
 

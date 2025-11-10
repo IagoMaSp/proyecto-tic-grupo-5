@@ -1,14 +1,14 @@
-// frontend/src/components/auth/LoginForm.tsx
 import { Link } from "react-router-dom";
-import FormField from "./FormField";
-import type { FormErrors, AuthFormData } from "../../services/auth/authTypes";
+import FormField from "./FormField.tsx";
+import type { AuthFormData, FormErrors } from "../../services/auth/authTypes";
 
 interface LoginFormProps {
-  formData: AuthFormData;
+  formData: Partial<AuthFormData>;
   errors: FormErrors;
   isLoading: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
+  from: string; // Prop para pasar la URL de redirección
 }
 
 export default function LoginForm({
@@ -17,12 +17,13 @@ export default function LoginForm({
   isLoading,
   onChange,
   onSubmit,
+  from,
 }: LoginFormProps) {
   return (
     <div className="form-container">
       <div className="form-header">
-        <h1 className="form-title">Bienvenido de vuelta</h1>
-        <p className="form-subtitle">Ingresá a tu cuenta para continuar</p>
+        <h1 className="form-title">¡Hola de nuevo!</h1>
+        <p className="form-subtitle">Iniciá sesión para continuar</p>
       </div>
 
       <form onSubmit={onSubmit} className="auth-form" noValidate>
@@ -41,7 +42,7 @@ export default function LoginForm({
           label="Nombre de usuario"
           id="username"
           name="username"
-          value={formData.username}
+          value={formData.username || ""}
           onChange={onChange}
           error={errors.username}
           placeholder="tu_usuario"
@@ -60,7 +61,7 @@ export default function LoginForm({
           id="password"
           name="password"
           type="password"
-          value={formData.password}
+          value={formData.password || ""}
           onChange={onChange}
           error={errors.password}
           placeholder="••••••••"
@@ -74,15 +75,15 @@ export default function LoginForm({
             </svg>
           }
         />
-
+        
         <div className="form-options">
-          <label className="checkbox-label">
-            <input type="checkbox" className="checkbox" disabled={isLoading} />
-            <span>Recordarme</span>
+          <label className="remember-me">
+            <input type="checkbox" name="remember" />
+            Recordarme
           </label>
-          <Link to="/forgot-password" className="link-text">
+          <a href="/reset-password" tabIndex={-1} className="link-text">
             ¿Olvidaste tu contraseña?
-          </Link>
+          </a>
         </div>
 
         <button type="submit" className="submit-button" disabled={isLoading}>
@@ -98,8 +99,12 @@ export default function LoginForm({
 
         <div className="form-footer">
           <span className="footer-text">¿No tenés cuenta?</span>
-          <Link to="/register" className="link-text strong">
-            Registrate acá
+          <Link 
+            to="/register" 
+            state={{ from: from }} // Aquí pasamos el estado 'from'
+            className="link-text strong"
+          >
+            Registrate
           </Link>
         </div>
       </form>

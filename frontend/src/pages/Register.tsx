@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/authContext";
 import { useAuthForm } from "../hooks/useAuthForm";
 import { validateRegister, calculatePasswordStrength, getPasswordStrengthLabel } from "../services/auth/authValidation";
@@ -9,15 +9,34 @@ import * as api from "../api";
 
 export default function Register() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, isAuthenticated } = useAuth();
   const [passwordStrength, setPasswordStrength] = useState(0);
+
+  // FIX: Handle both object and string 'from'
+  const getLocationPath = () => {
+    const stateFrom = location.state?.from;
+    if (!stateFrom) {
+      return "/";
+    }
+    // Case 1: from is a location object (rare, but possible if linked directly)
+    if (typeof stateFrom === 'object' && stateFrom.pathname) {
+      return stateFrom.pathname;
+    }
+    // Case 2: from is a string (e.g., from Login page link)
+    if (typeof stateFrom === 'string') {
+      return stateFrom;
+    }
+    return "/";
+  };
+  const from = getLocationPath();
   
   useEffect(() => {
     document.title = "UM Exchange | Registrarse";
     if (isAuthenticated) {
-      navigate("/");
+      navigate(from, { replace: true });
     }
-  }, [navigate, isAuthenticated]);
+  }, [navigate, isAuthenticated, from]);
 
   const {
     formData,
@@ -61,7 +80,7 @@ export default function Register() {
       await login(data.username, data.password);
       
       // 3. Redirigir
-      navigate("/");
+      navigate(from, { replace: true });
     },
   });
 
@@ -84,8 +103,8 @@ export default function Register() {
           features={[
             { icon: "✓", text: "Acceso a todas las universidades" },
             { icon: "✓", text: "Compará hasta 3 destinos" },
-            { icon: "✓", text: "Leé y dejá reviews verificadas" },
-            { icon: "✓", text: "Guardá tus favoritas en wishlist" },
+            { icon: "✓", text: "Leé y dejá reseñas verificadas" },
+            { icon: "✓", text: "Guardá tus favoritas en tu Lista de Deseos" },
           ]}
         />
         
@@ -252,7 +271,7 @@ export default function Register() {
 
               <div className="form-footer">
                 <span className="footer-text">¿Ya tenés cuenta?</span>
-                <Link to="/login" className="link-text strong">
+                <Link to="/login" state={{ from: from }} className="link-text strong">
                   Iniciá sesión
                 </Link>
               </div>

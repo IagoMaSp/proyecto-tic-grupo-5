@@ -56,7 +56,7 @@ export default function UniversityCard({
         className={`wishlist-toggle-btn ${isInWishlist ? "in-wishlist" : ""}`}
         onClick={handleWishlistClick}
         disabled={isLoading}
-        aria-label="Toggle Wishlist"
+        aria-label="Añadir/Quitar de Lista de Deseos"
       >
         {isLoading ? (
           <span className="spinner-small" />

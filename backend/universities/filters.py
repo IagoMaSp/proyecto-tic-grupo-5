@@ -35,7 +35,11 @@ class UniversityFilter(django_filters.FilterSet):
     # Búsqueda por Continente (case-insensitive)
     continent = django_filters.CharFilter(lookup_expr='icontains')
 
-    faculties = django_filters.CharFilter(
+    # --- CORRECCIÓN ---
+    # Renombrado de 'faculties' a 'faculty' para que coincida con el
+    # parámetro 'faculty' enviado desde el frontend (useUniversitySearch.ts).
+    # El 'field_name' sigue apuntando al campo correcto en el modelo.
+    faculty = django_filters.CharFilter(
         field_name='faculties__name',
         lookup_expr='iexact'  # Coincidencia exacta, case-insensitive
     )
@@ -76,11 +80,13 @@ class UniversityFilter(django_filters.FilterSet):
         model = University
         
         # REFACTOR: Lista de campos formateada para legibilidad
+        # --- CORRECCIÓN ---
+        # Actualizado de 'faculties' a 'faculty'
         fields = [
             'name',
             'country',
             'continent',
-            'faculties',
+            'faculty',
             'min_qs',
             'min_overall_rating',
             'min_social_rating',

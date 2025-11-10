@@ -16,7 +16,7 @@ export default function UserReviewsList({ reviews }: UserReviewsListProps) {
       <div className="empty-state">
         <h2 className="section-title mb-16">Mis Reseñas</h2>
         <p>Todavía no escribiste ninguna reseña.</p>
-        <p>¡Andá a la sección de <a href="/reviews">Reviews</a> y contá tu experiencia!</p>
+        <p>¡Andá a la sección de <a href="/reviews">Reseñas</a> y contá tu experiencia!</p>
       </div>
     );
   }

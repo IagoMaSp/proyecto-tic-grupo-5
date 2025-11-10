@@ -22,6 +22,13 @@ export default function Home() {
           ordering: 'qs_rating_top' 
         });
         setTopUniversities(data.results.slice(0, 10));
+        
+        // 🔍 DEBUG: Ver qué fotos están llegando
+        console.log('[Home] Top universidades:', data.results.slice(0, 10).map(u => ({
+          id: u.id,
+          name: u.name,
+          photos: u.photos
+        })));
       } catch (error) {
         console.error("Error cargando top universidades:", error);
       } finally {
@@ -34,32 +41,33 @@ export default function Home() {
 
   // Placeholder images (fallback si no hay fotos)
   const fallbackImages = [
-    "https://images.unsplash.com/photo-1543353071-10c8ba85a904?q=80&w=1600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1505764706515-aa95265c5abc?q=80&w=1600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1473959383410-a26507b602cc?q=80&w=1600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1488747279002-c8523379faaa?q=80&w=1600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1491553895911-0055eca6402d?q=80&w=1600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop",
+    "http://127.0.0.1:8000/media/university_photos/melbourn2.png",
+    "http://127.0.0.1:8000/media/university_photos/hongkong1.png",
+    "http://127.0.0.1:8000/media/university_photos/northwestern1.jpg",
+    "http://127.0.0.1:8000/media/university_photos/northwestern2.jpg",
+    "http://127.0.0.1:8000/media/university_photos/sevilla2.jpg",
+    "http://127.0.0.1:8000/media/university_photos/carlos1.webp",
+    "http://127.0.0.1:8000/media/university_photos/andes2.jpg",
+    "http://127.0.0.1:8000/media/university_photos/itba2.jpg",
+    "http://127.0.0.1:8000/media/university_photos/itba3.jpg",
+    
   ];
 
   // Transformar universidades para el carousel
   const carouselItems = topUniversities.map((uni, index) => {
-    // Intentar obtener la primera foto de la universidad
+    // Fallback image si no hay fotos
     let imageUrl = fallbackImages[index] || fallbackImages[0];
     
-    if (uni.photos && uni.photos.length > 0) {
-      const photo = uni.photos[0];
-      if (typeof photo === 'string') {
-        const photoStr: string = photo;
-        imageUrl = photoStr.startsWith('http') ? photoStr : `/media/${photoStr}`;
-      } else if (photo && typeof photo === 'object' && 'photo' in photo) {
-        const photoUrl = (photo as any).photo;
-        imageUrl = photoUrl.startsWith('http') ? photoUrl : `/media/${photoUrl}`;
+    // ✅ Las fotos ya vienen como URLs completas desde el backend
+    if (Array.isArray(uni.photos) && uni.photos.length > 0) {
+      const firstPhoto = uni.photos[0];
+      
+      if (typeof firstPhoto === 'string') {
+        imageUrl = firstPhoto;
+        console.log(`[Home] Usando foto para ${uni.name}:`, imageUrl);
       }
+    } else {
+      console.warn(`[Home] ${uni.name} no tiene fotos, usando fallback`);
     }
 
     return {

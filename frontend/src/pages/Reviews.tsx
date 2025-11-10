@@ -26,7 +26,7 @@ import { useEffect, useState} from "react";
     };
 
     useEffect(() => {
-      document.title = "UM Exchange | Reviews";
+      document.title = "UM Exchange | Reseñas";
       fetchAllReviews();
     }, []);
 
