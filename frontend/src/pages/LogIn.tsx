@@ -11,7 +11,23 @@ export default function LogIn() {
   const location = useLocation(); 
   const { login, isAuthenticated } = useAuth();
   
-  const from = location.state?.from?.pathname || "/";
+  // FIX: Handle both object and string 'from'
+  const getLocationPath = () => {
+    const stateFrom = location.state?.from;
+    if (!stateFrom) {
+      return "/";
+    }
+    // Case 1: from is a location object (e.g., from WishlistButton)
+    if (typeof stateFrom === 'object' && stateFrom.pathname) {
+      return stateFrom.pathname;
+    }
+    // Case 2: from is a string (e.g., from Register page link)
+    if (typeof stateFrom === 'string') {
+      return stateFrom;
+    }
+    return "/";
+  };
+  const from = getLocationPath();
 
   useEffect(() => {
     document.title = "UM Exchange | Iniciar sesión";
@@ -48,7 +64,7 @@ export default function LogIn() {
           stats={[
             { value: "150+", label: "Universidades" },
             { value: "40+", label: "Países" },
-            { value: "500+", label: "Reviews" },
+            { value: "500+", label: "Reseñas" },
           ]}
         />
         
@@ -59,6 +75,7 @@ export default function LogIn() {
             isLoading={isLoading}
             onChange={handleChange}
             onSubmit={handleSubmit}
+            from={from}
           />
         </div>
       </div>

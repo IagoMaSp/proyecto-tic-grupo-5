@@ -11,6 +11,7 @@
 @import url('./layout/_responsive.css');
 
 /* 3. Componentes (Botones, Cards, Navbar, etc.) */
+@import url('./components/_university-card.css');
 @import url('./components/_buttons.css');
 @import url('./components/_card.css');
 @import url('./components/_navbar.css');

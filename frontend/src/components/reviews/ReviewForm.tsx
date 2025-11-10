@@ -43,6 +43,7 @@ export default function ReviewForm({ onReviewCreated }: ReviewFormProps) {
   const [formData, setFormData] = useState<ReviewFormData>(initialState);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
 
   const handleChange = (
@@ -107,6 +108,7 @@ export default function ReviewForm({ onReviewCreated }: ReviewFormProps) {
 
     setIsSubmitting(true);
     setErrors({});
+    setSuccessMessage(null);
 
     try {
       const reviewData = {
@@ -123,11 +125,17 @@ export default function ReviewForm({ onReviewCreated }: ReviewFormProps) {
       onReviewCreated(newReview);
       setFormData(initialState);
       setSelectedUniversity(null);
+      
+      setSuccessMessage("Su reseña ha sido registrada con éxito y será verificada por nuestro equipo en breves.");
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+
     } catch (error) {
       console.error("Error creating review:", error);
       setErrors({
         general:
-          (error as Error).message || "Error al enviar la review.",
+          (error as Error).message || "Error al enviar la reseña.",
       });
     } finally {
       setIsSubmitting(false);
@@ -137,6 +145,15 @@ export default function ReviewForm({ onReviewCreated }: ReviewFormProps) {
   return (
     <form onSubmit={handleSubmit}>
       <h3 className="section-title mb-16">Creá tu Reseña</h3>
+
+      {errors.general && (
+        <div className="alert-error full-width mb-16">{errors.general}</div>
+      )}
+      
+      {successMessage && (
+        <div className="alert-success full-width mb-16">{successMessage}</div>
+      )}
+
       <div className="review-form-grid">
         <div className="form-group full-width">
           <label htmlFor="university" className="form-label">
@@ -236,10 +253,6 @@ export default function ReviewForm({ onReviewCreated }: ReviewFormProps) {
             <span className="error-message">{errors.description}</span>
           )}
         </div>
-
-        {errors.general && (
-          <div className="alert-error full-width">{errors.general}</div>
-        )}
 
         <div className="form-group full-width">
           <button

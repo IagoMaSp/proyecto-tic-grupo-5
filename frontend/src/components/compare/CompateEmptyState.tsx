@@ -11,7 +11,7 @@ export default function CompareEmptyState() {
       </div>
       <h2 className="compare-empty-title">Comenzá a comparar universidades</h2>
       <p className="compare-empty-text">
-        Seleccioná hasta 3 universidades de tu wishlist o buscá en el campo de arriba para compararlas lado a lado
+        Seleccioná hasta 3 universidades de tu Lista de Deseos o buscá en el campo de arriba para compararlas lado a lado
       </p>
       <div className="compare-empty-features">
         <div className="compare-empty-feature">
