@@ -7,7 +7,6 @@ import type { University, Review } from "../api";
 import UniversityHeader from "../components/universities/UniversityHeader";
 import UniversityInfo from "../components/universities/UniversityInfo";
 import UniversityReviews from "../components/universities/UniversityReviews";
-import UniversityPhotoGallery from "../components/universities/UniversityPhotoGallery";
 import WishlistButton from "../components/universities/WishlistButton";
 import { LoadingState, ErrorState } from "../components/StatusComponents";
 
@@ -15,7 +14,6 @@ export default function UniversityDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  // Esta ref evitará el doble fetch en StrictMode
   const hasFetchedData = useRef(false);
 
   const [university, setUniversity] = useState<University | null>(null);
@@ -25,7 +23,6 @@ export default function UniversityDetail() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Protección contra doble ejecución en StrictMode
     if (hasFetchedData.current) {
       return;
     }
@@ -33,29 +30,24 @@ export default function UniversityDetail() {
 
     const fetchData = async () => {
       if (!id) return;
- 
+
       try {
         setLoading(true);
         setError(null);
- 
-        // Se asume que getUniversity incrementa las visitas en el backend.
-        // La llamada explícita a incrementUniversityVisits se elimina.
-        // --- CAMBIO: getUniversity ahora necesita auth para filtrar reviews ---
+
         const [uniData, reviewsData] = await Promise.all([
           api.getUniversity(parseInt(id)),
-          api.getReviews(parseInt(id)), // Esta llamada ya filtra por aprobación
+          api.getReviews(parseInt(id)),
         ]);
- 
+
         setUniversity(uniData);
         setReviews(reviewsData);
- 
-        // La lógica de sessionStorage ya no es necesaria.
- 
+
         if (isAuthenticated) {
           const inWishlist = await api.isInWishlist(parseInt(id));
           setIsInWishlist(inWishlist);
         }
- 
+
         document.title = `${uniData.name} | UM Exchange`;
       } catch (err) {
         console.error("Error fetching university:", err);
@@ -64,41 +56,33 @@ export default function UniversityDetail() {
         setLoading(false);
       }
     };
- 
+
     fetchData();
-  }, [id, isAuthenticated]);  
-  
-    const handleWishlistToggle = async () => {
-      if (!isAuthenticated || !id) return;
-      
-      const previousState = isInWishlist;
-      setIsInWishlist(!isInWishlist); // Actualización optimista
-      
-      try {
-        if (previousState) {
-          // Eliminar de wishlist
-          console.log('[UniversityDetail] Eliminando universidad de wishlist...');
-          await api.removeFromWishlist(parseInt(id));
-          console.log('[UniversityDetail] ✅ Universidad eliminada correctamente');
-        } else {
-          // Agregar a wishlist
-          console.log('[UniversityDetail] Agregando universidad a wishlist...');
-          await api.addToWishlist(parseInt(id));
-          console.log('[UniversityDetail] ✅ Universidad agregada correctamente');
-        }
-      } catch (err) {
-        console.error('[UniversityDetail] ❌ Error toggling wishlist:', err);
-        
-        // Revertir al estado anterior
-        setIsInWishlist(previousState);
-        
-        // Mostrar mensaje de error al usuario (opcional)
-        const errorMsg = err instanceof Error ? err.message : String(err);
-        
-        // Si quieres mostrar un toast o alerta, hazlo aquí
-        alert(`Error: ${errorMsg}`);
+  }, [id, isAuthenticated]);
+
+  const handleWishlistToggle = async () => {
+    if (!isAuthenticated || !id) return;
+
+    const previousState = isInWishlist;
+    setIsInWishlist(!isInWishlist);
+
+    try {
+      if (previousState) {
+        console.log("[UniversityDetail] Eliminando universidad de wishlist...");
+        await api.removeFromWishlist(parseInt(id));
+        console.log("[UniversityDetail] ✅ Universidad eliminada correctamente");
+      } else {
+        console.log("[UniversityDetail] Agregando universidad a wishlist...");
+        await api.addToWishlist(parseInt(id));
+        console.log("[UniversityDetail] ✅ Universidad agregada correctamente");
       }
-    };
+    } catch (err) {
+      console.error("[UniversityDetail] ❌ Error toggling wishlist:", err);
+      setIsInWishlist(previousState);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      alert(`Error: ${errorMsg}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -122,13 +106,7 @@ export default function UniversityDetail() {
       </section>
     );
   }
-  
-  // --- CAMBIO ---
-  // Las 'reviews' que llegan aquí ya están filtradas por el backend
-  // (solo aprobadas, o aprobadas + las mías pendientes si estoy logueado)
-  // El conteo y los promedios vienen del 'university' object, que
-  // ahora calcula esto solo en base a reviews aprobadas.
-  // <UniversityPhotoGallery university={university} />
+
   const approvedReviewCount = university.review_count || 0;
   const showRating = university.overall_avg_rating && university.overall_avg_rating > 0;
 
@@ -150,7 +128,7 @@ export default function UniversityDetail() {
         <div className="university-detail-grid">
           <div className="university-main-col">
             <UniversityInfo university={university} />
-  
+
             <UniversityReviews reviews={reviews} universityName={university.name} />
           </div>
 

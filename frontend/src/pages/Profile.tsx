@@ -17,7 +17,6 @@ export default function ProfilePage() {
   const [userWishlist, setUserWishlist] = useState<WishlistWithDetails[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // ✅ Función para refrescar wishlist
   const refreshWishlist = async () => {
   try {
     console.log('[Profile] 🔄 Llamando a getWishlistWithDetails...');
@@ -44,7 +43,6 @@ export default function ProfilePage() {
       setLoadingData(true);
       console.log("[Profile] Iniciando fetch de datos...");
 
-      // 1. Pedir Reseñas
       try {
         const reviewsData = await api.getUserReviews();
         console.log("[Profile] Reseñas recibidas:", reviewsData);
@@ -54,7 +52,6 @@ export default function ProfilePage() {
         setUserReviews([]);
       }
 
-      // 2. Pedir Wishlist - BLOQUE SEPARADO
       try {
         console.log('[Profile] 🔄 Iniciando refreshWishlist...');
         await refreshWishlist();

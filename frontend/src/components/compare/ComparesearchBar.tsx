@@ -54,7 +54,6 @@ export default function CompareSearchBar({
         )}
       </div>
 
-      {/* Resultados de búsqueda */}
       {showResults && (
         <div className="compare-search-results">
           {searchResults.map((uni) => (
@@ -78,7 +77,6 @@ export default function CompareSearchBar({
         </div>
       )}
 
-      {/* Estado vacío */}
       {showEmpty && (
         <div className="compare-search-empty">
           <div className="empty-icon">🔍</div>
@@ -94,7 +92,6 @@ export default function CompareSearchBar({
         </div>
       )}
 
-      {/* Wishlist */}
       {showWishlist && (
         <div className="compare-wishlist-section">
           <div className="compare-wishlist-header">
@@ -135,7 +132,6 @@ export default function CompareSearchBar({
         </div>
       )}
 
-      {/* Mensaje para usuarios no logueados */}
       {!searchQuery && !isAuthenticated && (
         <div className="compare-login-prompt">
           <div className="login-prompt-icon">🔐</div>

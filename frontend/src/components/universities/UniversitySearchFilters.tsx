@@ -1,6 +1,5 @@
 import type { SortOption } from "../../hooks/useUniversitySearch";
 
-// Props que recibe este componente "tonto"
 type UniversityFiltersProps = {
   query: string;
   setQuery: (q: string) => void;
@@ -17,7 +16,6 @@ type UniversityFiltersProps = {
   handleClearFilters: () => void;
 };
 
-// Constantes locales
 const FACULTIES = ["FIUM", "FCEE", "Psicología", "FHUMyE", "FCOM", "FDER"];
 
 export default function UniversityFilters({
@@ -28,9 +26,7 @@ export default function UniversityFilters({
   
   return (
     <div className="search-filter-section">
-      {/* Barra de búsqueda y botón de filtros */}
       <div className="search-filter-bar">
-        {/* Campo de búsqueda */}
         <div className="search-input-wrapper">
           <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8"></circle>
@@ -50,7 +46,6 @@ export default function UniversityFilters({
           )}
         </div>
 
-        {/* Botón de filtros */}
         <button onClick={() => setShowFilters(!showFilters)} className={`filter-toggle-btn ${showFilters ? "active" : ""}`}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
@@ -60,7 +55,6 @@ export default function UniversityFilters({
         </button>
       </div>
 
-      {/* Panel de filtros expandible */}
       <div className={`filter-panel ${showFilters ? "open" : ""}`}>
         <div className="filter-panel-content">
           <div className="filter-section">
@@ -75,7 +69,6 @@ export default function UniversityFilters({
                 </select>
               </div>
 
-              {/* Filtro de Facultad */}
               <div className="filter-item">
                 <label className="filter-label">Facultad con convenio</label>
                 <select value={faculty} onChange={(e) => setFaculty(e.target.value)} className="filter-select">
@@ -86,7 +79,6 @@ export default function UniversityFilters({
             </div>
           </div>
 
-          {/* Filtro de Ordenar por */}
           <div className="filter-section">
             <label className="filter-section-label">Ordenar por</label>
             <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)} className="filter-select" style={{ maxWidth: "400px" }}>
@@ -103,7 +95,6 @@ export default function UniversityFilters({
             </select>
           </div>
 
-          {/* Botón de limpiar filtros */}
           {(activeFiltersCount > 0 || query) && (
             <button onClick={handleClearFilters} className="clear-filters-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

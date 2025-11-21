@@ -3,7 +3,7 @@ import { useAuth } from "../../contexts/authContext";
 import * as api from "../../api";
 
 export default function ProfileDetails() {
-  const { user, fetchProfile } = useAuth(); // fetchProfile refrescará el contexto
+  const { user, fetchProfile } = useAuth(); 
   
   const [username, setUsername] = useState(user?.username || "");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -33,18 +33,16 @@ export default function ProfileDetails() {
     setSuccess("");
 
     const formData = new FormData();
-    // Solo agregar campos si cambiaron
     if (username !== user.username) {
       formData.append("username", username);
     }
     if (selectedFile) {
-      // Importante: el backend espera 'profile.profile_photo'
       formData.append("profile.profile_photo", selectedFile);
     }
 
     try {
       await api.updateProfile(formData);
-      await fetchProfile(); // Recargar datos del usuario en el contexto
+      await fetchProfile(); 
       setSuccess("Perfil actualizado con éxito.");
     } catch (err) {
       setError((err as Error).message || "Error al actualizar.");

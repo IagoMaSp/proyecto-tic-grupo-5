@@ -13,17 +13,14 @@ export default function Register() {
   const { login, isAuthenticated } = useAuth();
   const [passwordStrength, setPasswordStrength] = useState(0);
 
-  // FIX: Handle both object and string 'from'
   const getLocationPath = () => {
     const stateFrom = location.state?.from;
     if (!stateFrom) {
       return "/";
     }
-    // Case 1: from is a location object (rare, but possible if linked directly)
     if (typeof stateFrom === 'object' && stateFrom.pathname) {
       return stateFrom.pathname;
     }
-    // Case 2: from is a string (e.g., from Login page link)
     if (typeof stateFrom === 'string') {
       return stateFrom;
     }
@@ -54,16 +51,14 @@ export default function Register() {
     },
     validate: validateRegister,
     onSubmit: async (data) => {
-      // 1. Registrar usando el servicio de api
       try {
         await api.register({
           username: data.username,
-          email: data.email || '', // Asegurarse de que no sea undefined
+          email: data.email || '',
           password: data.password,
-          password_confirm: data.confirmPassword || '', // Asegurarse de que no sea undefined
+          password_confirm: data.confirmPassword || '',
         });
       } catch (error) {
-         // Manejar errores de registro específicos (ej. email duplicado)
         const errorMessage = (error as Error).message;
         let specificError = "Error al registrarse. ";
         if (errorMessage.includes("username")) {
@@ -71,20 +66,15 @@ export default function Register() {
         } else if (errorMessage.includes("email")) {
           specificError = "Ese email ya está en uso.";
         }
-        // Lanzar error para que lo capture el hook
         throw new Error(specificError);
       }
 
-
-      // 2. Auto-login
       await login(data.username, data.password);
       
-      // 3. Redirigir
       navigate(from, { replace: true });
     },
   });
 
-  // Extender handleChange para calcular fuerza de contraseña
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     baseHandleChange(e);
     if (e.target.name === "password") {

@@ -1,4 +1,3 @@
-// frontend/src/services/auth/authValidation.ts
 import type { FormErrors, AuthFormData } from './authTypes';
 
 export const validateLogin = (data: AuthFormData): FormErrors => {
@@ -20,7 +19,6 @@ export const validateLogin = (data: AuthFormData): FormErrors => {
 export const validateRegister = (data: AuthFormData): FormErrors => {
   const errors: FormErrors = {};
   
-  // Username
   if (!data.username.trim()) {
     errors.username = "El nombre de usuario es requerido";
   } else if (data.username.length < 3) {
@@ -29,7 +27,6 @@ export const validateRegister = (data: AuthFormData): FormErrors => {
     errors.username = "Solo letras, números y guion bajo";
   }
   
-  // Email
   if (data.email !== undefined) {
     if (!data.email.trim()) {
       errors.email = "El email es requerido";
@@ -38,14 +35,12 @@ export const validateRegister = (data: AuthFormData): FormErrors => {
     }
   }
   
-  // Password
   if (!data.password) {
     errors.password = "La contraseña es requerida";
   } else if (data.password.length < 8) {
     errors.password = "Debe tener al menos 8 caracteres";
   }
   
-  // Confirm Password
   if (data.confirmPassword !== undefined) {
     if (!data.confirmPassword) {
       errors.confirmPassword = "Confirmá tu contraseña";
@@ -54,7 +49,6 @@ export const validateRegister = (data: AuthFormData): FormErrors => {
     }
   }
   
-  // Terms
   if (data.acceptTerms !== undefined && !data.acceptTerms) {
     errors.acceptTerms = "Debes aceptar los términos y condiciones";
   }

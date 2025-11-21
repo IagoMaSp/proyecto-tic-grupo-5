@@ -11,7 +11,6 @@ function ReviewCard({ review }: { review: Review }) {
   return (
     <div className={`review-card ${!review.is_approved ? 'review-pending' : ''}`}>
       
-      {/* --- MENSAJE DE PENDIENTE --- */}
       {!review.is_approved && (
         <div className="review-pending-banner">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -22,14 +21,11 @@ function ReviewCard({ review }: { review: Review }) {
           <span>Verificación pendiente. Esta reseña solo es visible para ti.</span>
         </div>
       )}
-      {/* --- FIN MENSAJE DE PENDIENTE --- */}
 
       <div className="review-header">
         <div>
-          {/* Fallback por si 'university_name' es opcional */}
           <h4 className="review-uni-name">{review.university_name || "Universidad"}</h4>
           <p className="review-user-date">
-            {/* Fallback por si 'username' es opcional */}
             Por <strong>{review.username || "Anónimo"}</strong> | {formatDate(review.start_date)} -{" "}
             {formatDate(review.end_date)}
           </p>

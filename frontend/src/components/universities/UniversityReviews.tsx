@@ -10,12 +10,10 @@ interface UniversityReviewsProps {
 export default function UniversityReviews({ reviews, universityName }: UniversityReviewsProps) {
   const [sortBy, setSortBy] = useState<"recent" | "rating">("recent");
 
-  // Ordenar reviews
   const sortedReviews = [...reviews].sort((a, b) => {
     if (sortBy === "rating") {
       return b.overall_rating - a.overall_rating;
     }
-    // Por defecto, más recientes primero (asumiendo que el ID es secuencial)
     return b.id - a.id;
   });
 
@@ -43,7 +41,6 @@ export default function UniversityReviews({ reviews, universityName }: Universit
           Experiencias de alumnos ({reviews.length})
         </h2>
         
-        {/* Sort selector */}
         <div className="reviews-sort">
           <button
             className={`sort-btn ${sortBy === "recent" ? "active" : ""}`}

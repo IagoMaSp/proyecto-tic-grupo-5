@@ -11,17 +11,14 @@ export default function LogIn() {
   const location = useLocation(); 
   const { login, isAuthenticated } = useAuth();
   
-  // FIX: Handle both object and string 'from'
   const getLocationPath = () => {
     const stateFrom = location.state?.from;
     if (!stateFrom) {
       return "/";
     }
-    // Case 1: from is a location object (e.g., from WishlistButton)
     if (typeof stateFrom === 'object' && stateFrom.pathname) {
       return stateFrom.pathname;
     }
-    // Case 2: from is a string (e.g., from Register page link)
     if (typeof stateFrom === 'string') {
       return stateFrom;
     }
