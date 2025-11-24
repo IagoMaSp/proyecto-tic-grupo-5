@@ -9,13 +9,25 @@ interface UniversityReviewsProps {
 
 export default function UniversityReviews({ reviews, universityName }: UniversityReviewsProps) {
   const [sortBy, setSortBy] = useState<"recent" | "rating">("recent");
+  // Estado para paginación
+  const [visibleCount, setVisibleCount] = useState(25);
+  // Estado para el hover del botón "Ver más"
+  const [isHovered, setIsHovered] = useState(false);
 
+  // Ordenar reviews
   const sortedReviews = [...reviews].sort((a, b) => {
     if (sortBy === "rating") {
       return b.overall_rating - a.overall_rating;
     }
+    // Por defecto, más recientes primero (asumiendo que el ID es secuencial)
     return b.id - a.id;
   });
+
+  // Función para resetear paginación al cambiar orden y manejar "Ver más"
+  const handleSortChange = (type: "recent" | "rating") => {
+    setSortBy(type);
+    setVisibleCount(25); // Reseteamos a 25 al cambiar el orden
+  };
 
   if (reviews.length === 0) {
     return (
@@ -41,16 +53,17 @@ export default function UniversityReviews({ reviews, universityName }: Universit
           Experiencias de alumnos ({reviews.length})
         </h2>
         
+        {/* Sort selector */}
         <div className="reviews-sort">
           <button
             className={`sort-btn ${sortBy === "recent" ? "active" : ""}`}
-            onClick={() => setSortBy("recent")}
+            onClick={() => handleSortChange("recent")}
           >
             Más recientes
           </button>
           <button
             className={`sort-btn ${sortBy === "rating" ? "active" : ""}`}
-            onClick={() => setSortBy("rating")}
+            onClick={() => handleSortChange("rating")}
           >
             Mejor valoradas
           </button>
@@ -58,7 +71,7 @@ export default function UniversityReviews({ reviews, universityName }: Universit
       </div>
 
       <div className="reviews-list">
-        {sortedReviews.map((review, index) => (
+        {sortedReviews.slice(0, visibleCount).map((review, index) => (
           <div 
             key={review.id} 
             className="review-item-wrapper"
@@ -68,6 +81,31 @@ export default function UniversityReviews({ reviews, universityName }: Universit
           </div>
         ))}
       </div>
+
+      {/* Botón Ver más mejorado */}
+      {visibleCount < sortedReviews.length && (
+        <div style={{ textAlign: "center", marginTop: "30px", paddingBottom: "10px" }}>
+          <button 
+            onClick={() => setVisibleCount(prev => prev + 25)}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            style={{
+              padding: "10px 28px",
+              backgroundColor: isHovered ? "#333" : "transparent",
+              color: isHovered ? "#fff" : "#555",
+              border: `2px solid ${isHovered ? "#333" : "#e0e0e0"}`,
+              borderRadius: "50px",
+              cursor: "pointer",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              transition: "all 0.3s ease",
+              outline: "none"
+            }}
+          >
+            Ver más reseñas
+          </button>
+        </div>
+      )}
     </div>
   );
 }
