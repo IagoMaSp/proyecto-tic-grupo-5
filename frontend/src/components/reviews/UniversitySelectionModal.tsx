@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import * as api from "../../api";
 import type { University, UniversityFilters } from "../../api";
-import UniversityFiltersComponent from "./UniversityFilters"; // Renombrado para evitar confusión
-import { useDebounce } from "../../hooks/useDebounce"; // Importamos el hook refactorizado
+import UniversityFiltersComponent from "./UniversityFilters";
+import { useDebounce } from "../../hooks/useDebounce";
 
 interface UniversitySelectionModalProps {
   onSelect: (university: University) => void;
@@ -17,21 +17,17 @@ export default function UniversitySelectionModal({
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<UniversityFilters>({});
   
-  // Usamos el hook useDebounce para el objeto de filtros completo
   const debouncedFilters = useDebounce(filters, 300);
 
-  // Ejecutar búsqueda/filtrado
   useEffect(() => {
     const fetchUniversities = async () => {
       setLoading(true);
       try {
-        // MODIFICACIÓN: Solo buscar si 'search' tiene un valor.
         if (debouncedFilters.search && debouncedFilters.search.length > 0) {
           const data = await api.getUniversities(debouncedFilters);
-          // MODIFICACIÓN: Acceder a 'data.results' o 'data' si no es paginado
           setSearchResults(data.results || data);
         } else {
-          setSearchResults([]); // Limpiar si no hay búsqueda
+          setSearchResults([]); 
         }
       } catch (error) {
         console.error("Error searching universities:", error);
@@ -41,7 +37,7 @@ export default function UniversitySelectionModal({
 
     fetchUniversities();
     
-  }, [debouncedFilters]); // Se activa cuando el valor "debounced" cambia
+  }, [debouncedFilters]);
 
   const renderUniversityItem = (university: University) => (
     <div

@@ -3,7 +3,6 @@ import type { UniversityFilters } from "../../api.ts";
 interface UniversityFiltersProps {
   filters: UniversityFilters;
   onFilterChange: (filters: UniversityFilters) => void;
-  // Ya no se reciben 'options'
 }
 
 export default function UniversityFilters({ filters, onFilterChange }: UniversityFiltersProps) {
@@ -12,7 +11,7 @@ export default function UniversityFilters({ filters, onFilterChange }: Universit
     const { name, value } = e.target;
     onFilterChange({
       ...filters,
-      [name]: value === "" ? undefined : value, // Poner undefined si está vacío para limpiar el filtro
+      [name]: value === "" ? undefined : value,
     });
   };
 
@@ -30,12 +29,6 @@ export default function UniversityFilters({ filters, onFilterChange }: Universit
           onChange={handleChange}
         />
       </div>
-      
-      {/* NOTA: Los filtros de País y Continente (y otros) de tu api.ts 
-        requerirían un <select>. Pero tu API no provee un endpoint 
-        para obtener la lista de opciones (ej. todos los países). 
-        Por ahora, solo implementamos 'search'.
-      */}
       
       <style>{`
         .university-filters {

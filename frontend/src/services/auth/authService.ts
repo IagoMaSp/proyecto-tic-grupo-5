@@ -1,4 +1,3 @@
-// frontend/src/services/authService.ts (SIMPLIFICADO)
 import type { LoginCredentials, LoginResponse, UserProfile } from './authTypes';
 
 class AuthService {
@@ -85,7 +84,7 @@ class AuthService {
     if (response.status === 401) {
       try {
         await this.refreshToken();
-        return this.getProfile(); // Reintentar
+        return this.getProfile(); 
       } catch {
         this.logout();
         throw new Error('Session expired');

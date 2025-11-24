@@ -28,9 +28,8 @@ export default function UserWishlist({ wishlistItems }: UserWishlistProps) {
   );
 }
 
-// Componente interno para la tarjeta de wishlist
 function WishlistCard({ item }: { item: WishlistWithDetails['university_details'] }) {
-  if (!item) return null; // Seguridad por si 'university_details' no vino
+  if (!item) return null; 
 
   return (
     <Link to={`/universities/${item.id}`} className="wishlist-card">

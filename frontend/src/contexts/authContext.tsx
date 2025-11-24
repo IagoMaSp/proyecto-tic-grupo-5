@@ -4,25 +4,22 @@ import {
   useState,
   useEffect,
   type ReactNode,
-  useCallback, // Importar useCallback
+  useCallback,
 } from "react";
-import * as api from "../api"; // Importar todas las funciones de la api
-import type { Profile } from "../api"; // Importar el tipo Profile
+import * as api from "../api";
+import type { Profile } from "../api";
 
-// 1. Definir el tipo para el contexto
 interface AuthContextType {
   isAuthenticated: boolean;
   user: Profile | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
-  fetchProfile: () => Promise<void>; // <-- AÑADIR LA FUNCIÓN AL TIPO
+  fetchProfile: () => Promise<void>;
 }
 
-// 2. Crear el contexto
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// 3. Crear el componente Provider
 interface AuthProviderProps {
   children: ReactNode;
 }
@@ -32,8 +29,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const isAuthenticated = !!user;
 
-  // 4. Implementar fetchProfile
-  // Usamos useCallback para que la función no se recree en cada render
   const fetchProfile = useCallback(async () => {
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -43,13 +38,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
-      setIsLoading(true); // Indicar que estamos cargando
+      setIsLoading(true);
       const profileData = await api.getProfile();
       setUser(profileData);
     } catch (error) {
       console.error("Error fetching profile:", error);
       setUser(null);
-      // Si falla (ej. token expirado), limpiar tokens
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
     } finally {
@@ -57,43 +51,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  // Efecto para cargar el perfil al iniciar la app
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]); // fetchProfile es ahora una dependencia
+  }, [fetchProfile]);
 
-  // Implementar login
   const login = async (username: string, password: string) => {
     try {
       await api.login({ username, password });
-      await fetchProfile(); // Usar fetchProfile para cargar el usuario después del login
+      await fetchProfile();
     } catch (error) {
       console.error("Login failed:", error);
-      // Relanzar el error para que el formulario lo maneje
       throw error;
     }
   };
 
-  // Implementar logout
   const logout = () => {
-    api.logout(); // Limpia localStorage
+    api.logout();
     setUser(null);
   };
 
-  // 5. Pasar la función en el value
   const value = {
     isAuthenticated,
     user,
     isLoading,
     login,
     logout,
-    fetchProfile, // <-- PASAR LA FUNCIÓN AL CONTEXTO
+    fetchProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// 6. Crear el hook 'useAuth'
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

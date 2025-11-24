@@ -6,8 +6,6 @@ interface UserReviewsListProps {
 }
 
 export default function UserReviewsList({ reviews }: UserReviewsListProps) {
-  // --- PUNTO DE CONTROL 4 ---
-  // Esto nos dirá qué props está recibiendo este componente.
   console.log("[UserReviewsList] Props recibidas:", reviews);
 
   if (reviews.length === 0) {

@@ -1,4 +1,3 @@
-// frontend/src/components/auth/FormField.tsx
 import { useState } from "react";
 
 interface FormFieldProps {

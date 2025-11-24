@@ -1,6 +1,3 @@
-/**
- * Componente para el estado de carga.
- */
 export function LoadingState() {
   return (
     <div className="loading-container">
@@ -10,9 +7,6 @@ export function LoadingState() {
   );
 }
 
-/**
- * Componente para el estado de error.
- */
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="error-container">
@@ -24,9 +18,6 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry: () 
   );
 }
 
-/**
- * Componente para el estado vacío (sin resultados).
- */
 export function EmptyState({ query, onClear }: { query: string; onClear: () => void }) {
   return (
     <div className="empty-container">

@@ -8,7 +8,7 @@ interface LoginFormProps {
   isLoading: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
-  from: string; // Prop para pasar la URL de redirección
+  from: string;
 }
 
 export default function LoginForm({
@@ -101,7 +101,7 @@ export default function LoginForm({
           <span className="footer-text">¿No tenés cuenta?</span>
           <Link 
             to="/register" 
-            state={{ from: from }} // Aquí pasamos el estado 'from'
+            state={{ from: from }}
             className="link-text strong"
           >
             Registrate

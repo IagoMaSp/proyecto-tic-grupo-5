@@ -9,10 +9,9 @@ export default function UniversityHeader({ university }: UniversityHeaderProps) 
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   const fallbackStyle = {
-    background: "linear-gradient(135deg, #E0F2FE, #BAE6FD)", // fondo celeste UM
+    background: "linear-gradient(135deg, #E0F2FE, #BAE6FD)",
   };
 
-  // Manejo robusto de URLs
   const getPhotoUrl = (photo: string) => {
     if (!photo) return "";
     if (photo.startsWith("http")) return photo;
@@ -21,7 +20,6 @@ export default function UniversityHeader({ university }: UniversityHeaderProps) 
     return `/media/${photo}`;
   };
 
-  // Asegurar compatibilidad con API (array de objetos o strings)
   const photos =
     Array.isArray(university.photos) && university.photos.length > 0
       ? university.photos

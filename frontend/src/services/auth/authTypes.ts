@@ -1,5 +1,3 @@
-// frontend/src/services/auth/authTypes.ts
-
 export interface LoginCredentials {
   username: string;
   password: string;

@@ -1,5 +1,3 @@
-// frontend/src/components/auth/AuthBranding.tsx
-
 interface AuthBrandingProps {
   title: string;
   description: string;

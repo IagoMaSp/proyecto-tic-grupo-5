@@ -26,8 +26,6 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   }
   
   if (!isAuthenticated) {
-    // La página de perfil se encargará de mostrar
-    // el contenido de "no logueado".
   }
   
   return <>{children}</>;
@@ -41,13 +39,12 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: "universities", element: <Universities /> },
-      { path: "universities/:id", element: <UniversityDetail /> }, // ⬅️ AGREGAR ESTA LÍNEA
+      { path: "universities/:id", element: <UniversityDetail /> },
       { path: "compare", element: <Compare /> },
       { path: "reviews", element: <Reviews /> },
       { path: "about", element: <About /> },
       { path: "login", element: <LogIn /> },
       { path: "register", element: <Register /> },
-      // Nueva Ruta de Perfil
       {
         path: "profile",
         element: (

@@ -17,7 +17,6 @@ export function useCompareUniversities() {
 
   const debouncedQuery = useDebounce(searchQuery, 300);
 
-  // Cargar wishlist al montar
   useEffect(() => {
     const loadWishlist = async () => {
       try {
@@ -35,7 +34,6 @@ export function useCompareUniversities() {
     loadWishlist();
   }, []);
 
-  // Buscar universidades
   useEffect(() => {
     const searchUniversities = async () => {
       if (!debouncedQuery || debouncedQuery.trim().length === 0) {
@@ -58,7 +56,6 @@ export function useCompareUniversities() {
     searchUniversities();
   }, [debouncedQuery]);
 
-  // Agregar universidad a la comparación
   const addUniversity = useCallback(async (university: University) => {
     if (selectedUniversities.length >= 3) {
       return;
@@ -69,10 +66,7 @@ export function useCompareUniversities() {
     }
 
     try {
-      // Obtener la universidad completa con todas las anotaciones
       const fullUniversity = await api.getUniversity(university.id);
-      
-      // Obtener las últimas 3 reviews
       const reviews = await api.getReviews(university.id);
       const latestReviews = reviews.slice(0, 3);
 
@@ -88,12 +82,10 @@ export function useCompareUniversities() {
     }
   }, [selectedUniversities]);
 
-  // Remover universidad de la comparación
   const removeUniversity = useCallback((id: number) => {
     setSelectedUniversities(prev => prev.filter(u => u.id !== id));
   }, []);
 
-  // Limpiar comparación
   const clearComparison = useCallback(() => {
     setSelectedUniversities([]);
   }, []);

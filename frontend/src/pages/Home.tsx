@@ -13,17 +13,14 @@ export default function Home() {
     document.title = "UM Exchange | Inicio";
     setTimeout(() => setIsVisible(true), 100);
 
-    // Cargar top universidades
     const fetchTopUniversities = async () => {
       try {
         setIsLoading(true);
-        // Obtener las 10 mejores universidades por QS ranking
         const data = await api.getUniversities({ 
           ordering: 'qs_rating_top' 
         });
         setTopUniversities(data.results.slice(0, 10));
         
-        // 🔍 DEBUG: Ver qué fotos están llegando
         console.log('[Home] Top universidades:', data.results.slice(0, 10).map(u => ({
           id: u.id,
           name: u.name,
@@ -39,7 +36,6 @@ export default function Home() {
     fetchTopUniversities();
   }, []);
 
-  // Placeholder images (fallback si no hay fotos)
   const fallbackImages = [
     "http://127.0.0.1:8000/media/university_photos/melbourn2.png",
     "http://127.0.0.1:8000/media/university_photos/hongkong1.png",
@@ -53,12 +49,9 @@ export default function Home() {
     
   ];
 
-  // Transformar universidades para el carousel
   const carouselItems = topUniversities.map((uni, index) => {
-    // Fallback image si no hay fotos
     let imageUrl = fallbackImages[index] || fallbackImages[0];
     
-    // ✅ Las fotos ya vienen como URLs completas desde el backend
     if (Array.isArray(uni.photos) && uni.photos.length > 0) {
       const firstPhoto = uni.photos[0];
       
@@ -104,7 +97,6 @@ export default function Home() {
 
   return (
     <div className={`home-container ${isVisible ? "visible" : ""}`}>
-      {/* HERO SECTION */}
       <section className="hero-full">
         <div className="hero-overlay" />
         <div className="container">
@@ -135,7 +127,6 @@ export default function Home() {
             </ul>
           </div>
 
-          {/* Stats mini cards */}
           <div className="stats-row">
             {stats.map((stat, i) => (
               <div key={i} className="stat-card" style={{ animationDelay: `${0.6 + i * 0.1}s` }}>
@@ -147,7 +138,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CAROUSEL SECTION */}
       <section className="container">
         <div className="section-header">
           <h2 className="section-title">Top destinos de intercambio UM</h2>
@@ -172,7 +162,6 @@ export default function Home() {
         )}
       </section>
 
-      {/* FEATURES SECTION */}
       <section className="container">
         <div className="card features-card">
           <div className="section-header text-center">
@@ -200,7 +189,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA SECTION */}
       <section className="container">
         <div className="cta-card">
           <div className="cta-content">

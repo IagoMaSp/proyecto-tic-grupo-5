@@ -1,4 +1,3 @@
-// frontend/src/hooks/useAuthForm.ts
 import { useState } from 'react';
 import type { FormErrors, AuthFormData } from '../services/auth/authTypes';
 
@@ -19,7 +18,6 @@ export const useAuthForm = ({ initialValues, validate, onSubmit }: UseAuthFormPr
     
     setFormData((prev) => ({ ...prev, [name]: newValue as any }));
     
-    // Limpiar errores
     if (errors[name as keyof FormErrors] || errors.general) {
       setErrors((prev) => ({ 
         ...prev, 
@@ -32,7 +30,6 @@ export const useAuthForm = ({ initialValues, validate, onSubmit }: UseAuthFormPr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validar
     const validationErrors = validate(formData);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -61,6 +58,6 @@ export const useAuthForm = ({ initialValues, validate, onSubmit }: UseAuthFormPr
     isLoading,
     handleChange,
     handleSubmit,
-    setErrors, // Exportar setErrors por si se necesita
+    setErrors,
   };
 };

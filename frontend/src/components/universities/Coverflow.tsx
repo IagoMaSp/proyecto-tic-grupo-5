@@ -10,19 +10,16 @@ export default function Coverflow({ items, autoPlayMs = 3000 }: { items: Item[];
   const centerOffset = useRef(0);
   const step = () => cardW.current + gap.current;
 
-  // medir y configurar padding para centrar
   const measure = () => {
     const track = trackRef.current!;
     const firstCard = track.querySelector<HTMLElement>(".cf-card");
     if (!firstCard) return;
 
     cardW.current = firstCard.offsetWidth;
-    // gap real del flex container
     const style = getComputedStyle(track);
     gap.current = parseInt(style.columnGap || style.gap || "32", 10);
 
     centerOffset.current = (track.clientWidth - cardW.current) / 2;
-    // padding lateral para que la 1ª y última también puedan centrarse
     track.style.paddingLeft = `${centerOffset.current + 32}px`;
     track.style.paddingRight = `${centerOffset.current + 32}px`;
   };
@@ -30,16 +27,13 @@ export default function Coverflow({ items, autoPlayMs = 3000 }: { items: Item[];
   useLayoutEffect(() => {
     if (!trackRef.current) return;
     measure();
-    // centrar la primera
     goTo(0, false);
 
     const onResize = () => { measure(); goTo(idx, false); };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // índice desde scroll (compensando offset)
   useEffect(() => {
     const el = trackRef.current; if (!el) return;
     let ticking = false;
@@ -63,7 +57,6 @@ export default function Coverflow({ items, autoPlayMs = 3000 }: { items: Item[];
     setIdx(i);
   };
 
-  // autoplay
   useEffect(() => {
     const el = trackRef.current; if (!el || items.length < 2) return;
     const t = setInterval(() => goTo((idx + 1) % items.length), autoPlayMs);
