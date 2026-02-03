@@ -5,6 +5,7 @@ from django.db import transaction
 from universities.models import University, Faculty, PhotosUniversity
 from unidecode import unidecode
 from thefuzz import process
+from django.utils.text import slugify
 
 class Command(BaseCommand):
     MATCH_THRESHOLD = 90
@@ -106,10 +107,11 @@ class Command(BaseCommand):
                         self.stdout.write(self.style.ERROR(f"Error: La columna 'web_pages' está vacía o no se encontró en la fila para {row['name']}."))
                         universities_skipped += 1
                         continue
-
+                    stripped_name=row['name'].strip()
                     obj,created = University.objects.update_or_create(
-                        name=row['name'].strip(),
+                        name=stripped_name,
                         defaults={
+                            'slug':slugify(stripped_name),
                             'country': row['country'],
                             'web_pages': row['web_pages'],
                             'qs_rating_top': top,

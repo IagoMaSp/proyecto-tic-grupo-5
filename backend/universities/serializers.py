@@ -56,6 +56,7 @@ class UniversityListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 
             'name', 
+            'slug',
             'country', 
             'continent',
             'qs_rating_top', 
@@ -104,6 +105,7 @@ class UniversitySerializer(serializers.ModelSerializer):
         fields = [
             # Campos básicos del modelo
             'id',
+            'slug',
             'name',
             'country',
             'continent',

@@ -46,6 +46,7 @@ class University(models.Model):
     """Almacena información sobre una universidad específica."""
     
     name = models.CharField(max_length=255, null=False, blank=False, unique=True)
+    slug = models.SlugField(max_length=255, null=True, blank=True)
     country = models.CharField(max_length=255, null=False, blank=False)
     qs_rating_top = models.IntegerField(null=False, blank=False)
     qs_rating_bottom = models.IntegerField(null=False, blank=False)
