@@ -46,6 +46,7 @@ class University(models.Model):
     """Almacena información sobre una universidad específica."""
     
     name = models.CharField(max_length=255, null=False, blank=False, unique=True)
+    slug = models.SlugField(max_length=255, null=True, blank=True)
     country = models.CharField(max_length=255, null=False, blank=False)
     qs_rating_top = models.IntegerField(null=False, blank=False)
     qs_rating_bottom = models.IntegerField(null=False, blank=False)
@@ -136,7 +137,7 @@ class PhotosUniversity(models.Model):
 
     def __str__(self):
         if self.university is None:
-            return f'Foto sin universidad asociada (antes de {self.univeersity_name_linker or "desconocido"})'
+            return f'Foto sin universidad asociada (antes de {self.university_name_linker or "desconocido"})'
         return f'Foto de {self.university.name}'
 
     class Meta:
