@@ -13,6 +13,7 @@ from datetime import date
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
+from django.conf import settings
 # 3. Importaciones locales (Modelos de esta aplicación)
 from .models import University, Profile, Review, Wishlist, Faculty
 
@@ -50,7 +51,8 @@ class UniversityListSerializer(serializers.ModelSerializer):
     """
     review_count = serializers.IntegerField(read_only=True)
     overall_avg_rating = serializers.FloatField(read_only=True)
-    
+    main_photo = serializers.SerializerMethodField()
+
     class Meta:
         model = University
         fields = [
@@ -66,9 +68,23 @@ class UniversityListSerializer(serializers.ModelSerializer):
             # 'faculties', # Quitado para aligerar la respuesta de lista
             'review_count',
             'overall_avg_rating',
-            'description'
+            'description',
+            'main_photo'
         ]
     
+    def get_main_photo(self,obj):
+        # print("MAIN PHOTO RAW:", obj.main_photo)
+        request= self.context.get('request')
+        # print("HAS REQUEST:", bool(request))
+        if not obj.main_photo:
+            return None
+        # print("url ", request.build_absolute_uri(obj.main_photo))
+        if not obj.main_photo.startswith(settings.MEDIA_URL):
+            photo_path = f"{settings.MEDIA_URL}{obj.main_photo}"
+        else:
+            photo_path = obj.main_photo
+
+        return request.build_absolute_uri(photo_path) if request else photo_path
 
 
 class UniversitySerializer(serializers.ModelSerializer):

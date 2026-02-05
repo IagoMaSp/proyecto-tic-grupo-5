@@ -47,6 +47,7 @@ export interface University {
   avg_place?: number;
   faculties?: string[];
   description: string;
+  main_photo?: string | null;
 }
 
 export interface Photo {

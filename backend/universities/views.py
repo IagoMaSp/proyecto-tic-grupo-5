@@ -5,7 +5,7 @@ Sin paginación: devuelve todas las universidades en una sola respuesta.
 
 # --- Importaciones ---
 from django.contrib.auth.models import User
-from django.db.models import Avg, F, ExpressionWrapper, FloatField, Count, Q
+from django.db.models import Avg, F, ExpressionWrapper, FloatField, Count, Q, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404  
 
@@ -22,7 +22,7 @@ from rest_framework import serializers
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 
-from .models import University, Review, Profile, Wishlist
+from .models import PhotosUniversity, University, Review, Profile, Wishlist
 from .serializers import (
     UniversitySerializer,
     ReviewSerializer,
@@ -231,19 +231,23 @@ class UniversityViewSet(viewsets.ModelViewSet):
         """Queryset optimizado con anotaciones."""
         # --- MODIFICADO ---
         # Los promedios y conteos ahora se basan SÓLO en reviews aprobadas.
+
         approved_reviews = Q(reviews__is_approved=True)
         
         avg_social = Coalesce(Avg('reviews__social_rating', filter=approved_reviews), 0.0, output_field=FloatField())
         avg_academic = Coalesce(Avg('reviews__academic_rating', filter=approved_reviews), 0.0, output_field=FloatField())
         avg_place = Coalesce(Avg('reviews__place_rating', filter=approved_reviews), 0.0, output_field=FloatField())
         
+        main_photo_sq=PhotosUniversity.objects.filter(university=OuterRef('pk'), photo__isnull=False).order_by('id').values('photo')[:1]
+
         return University.objects.prefetch_related(
-            'photos', 'reviews', 'reviews__user', 'reviews__user__profile', 'faculties'
+            'reviews', 'reviews__user', 'reviews__user__profile', 'faculties'
         ).annotate(
             review_count=Count('reviews', distinct=True, filter=approved_reviews), # Contar solo aprobadas
             avg_social=avg_social,
             avg_academic=avg_academic,
-            avg_place=avg_place
+            avg_place=avg_place,
+            main_photo=Subquery(main_photo_sq)
         ).annotate(
             overall_avg_rating=ExpressionWrapper(
                 (F('avg_social') + F('avg_academic') + F('avg_place')) / 3.0,

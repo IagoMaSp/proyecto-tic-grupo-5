@@ -24,7 +24,7 @@ export default function Home() {
         console.log('[Home] Top universidades:', data.results.slice(0, 10).map(u => ({
           id: u.id,
           name: u.name,
-          photos: u.photos
+          photo: u.main_photo
         })));
       } catch (error) {
         console.error("Error cargando top universidades:", error);
@@ -38,6 +38,7 @@ export default function Home() {
 
   const fallbackImages = [
     "http://127.0.0.1:8000/media/university_photos/melbourn2.png",
+    /*
     "http://127.0.0.1:8000/media/university_photos/hongkong1.png",
     "http://127.0.0.1:8000/media/university_photos/northwestern1.jpg",
     "http://127.0.0.1:8000/media/university_photos/northwestern2.jpg",
@@ -46,14 +47,14 @@ export default function Home() {
     "http://127.0.0.1:8000/media/university_photos/andes2.jpg",
     "http://127.0.0.1:8000/media/university_photos/itba2.jpg",
     "http://127.0.0.1:8000/media/university_photos/itba3.jpg",
-    
+    */
   ];
 
   const carouselItems = topUniversities.map((uni, index) => {
     let imageUrl = fallbackImages[index] || fallbackImages[0];
     
-    if (Array.isArray(uni.photos) && uni.photos.length > 0) {
-      const firstPhoto = uni.photos[0];
+    if (uni.main_photo!=null) {
+      const firstPhoto = uni.main_photo;
       
       if (typeof firstPhoto === 'string') {
         imageUrl = firstPhoto;
