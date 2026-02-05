@@ -121,15 +121,6 @@ export default function Carousel({ items, autoPlayMs = 4500 }: Props) {
               />
             ))}
           </div>
-
-          {isPaused && (
-            <div className="pause-indicator">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16"></rect>
-                <rect x="14" y="4" width="4" height="16"></rect>
-              </svg>
-            </div>
-          )}
         </>
       )}
     </div>

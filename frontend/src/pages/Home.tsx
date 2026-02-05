@@ -37,17 +37,7 @@ export default function Home() {
   }, []);
 
   const fallbackImages = [
-    "http://127.0.0.1:8000/media/university_photos/melbourn2.png",
-    /*
-    "http://127.0.0.1:8000/media/university_photos/hongkong1.png",
-    "http://127.0.0.1:8000/media/university_photos/northwestern1.jpg",
-    "http://127.0.0.1:8000/media/university_photos/northwestern2.jpg",
-    "http://127.0.0.1:8000/media/university_photos/sevilla2.jpg",
-    "http://127.0.0.1:8000/media/university_photos/carlos1.webp",
-    "http://127.0.0.1:8000/media/university_photos/andes2.jpg",
-    "http://127.0.0.1:8000/media/university_photos/itba2.jpg",
-    "http://127.0.0.1:8000/media/university_photos/itba3.jpg",
-    */
+    "http://127.0.0.1:8000/media/image.png",
   ];
 
   const carouselItems = topUniversities.map((uni, index) => {
