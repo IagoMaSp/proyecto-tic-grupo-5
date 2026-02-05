@@ -157,7 +157,7 @@ class Profile(models.Model):
         on_delete=models.CASCADE,
         related_name='profile' 
     )
-    
+    is_admin =models.BooleanField(null=False,blank=False,default=False,db_default=False)
     profile_photo = models.ImageField(upload_to='profile_photos/', blank=True, null=True)
 
     def __str__(self):

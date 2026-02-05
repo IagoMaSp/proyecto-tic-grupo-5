@@ -26,6 +26,8 @@ from .models import PhotosUniversity, University, Review, Profile, Wishlist
 from .serializers import (
     UniversitySerializer,
     ReviewSerializer,
+    UniversityCreateSerializer,
+    UniversityUpdateSerializer,
     UserSerializer,
     RegisterSerializer,
     WishlistSerializer,
@@ -33,7 +35,7 @@ from .serializers import (
     UniversityDetailSerializer
 )
 from .filters import UniversityFilter
-
+from .permissions import IsProfileAdmin
 
 # --- Autenticación y Perfil ---
 class RegisterView(generics.CreateAPIView):
@@ -82,6 +84,10 @@ class UniversityViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         """Serializer según la acción."""
+        if self.action == 'create':
+            return UniversityCreateSerializer
+        if self.action == 'partial_update':
+            return UniversityUpdateSerializer
         if self.action == 'list':
             return UniversityListSerializer
         if self.action == 'full_detail':
@@ -90,9 +96,9 @@ class UniversityViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         """Solo admins pueden crear/editar/eliminar."""
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsAdminUser()]
-        return super().get_permissions()
+        if self.action in ['create', 'partial_update', 'destroy','add_photos','remove_photo']:
+            return [IsProfileAdmin()]
+        return [AllowAny]
 
     def get_queryset(self):
         """Queryset con anotaciones."""
@@ -127,10 +133,30 @@ class UniversityViewSet(viewsets.ModelViewSet):
                 'total_universities': queryset.count(),
                 'unique_countries': stats['total_countries'],
                 'unique_continents': stats['total_continents'],
-                'avg_qs_rating': stats['avg_qs'],
-        }
-})
+                'avg_qs_rating': stats['avg_qs'],}
+                })
 
+    def destroy(self, request, *args, **kwargs):
+        university= self.get_object()
+        name = university.name
+        university.delete()
+        return Response({'detail':f'Universidad {name} eliminada'}, status=status.HTTP_204_NO_CONTENT)
+
+    def create(self, request, *args, **kwargs):
+        serializer= self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        university=serializer.save()
+        return Response({'id':university.id,'detail':'Universidad creada correctamente'})
+    
+    def partial_update(self, request, *args, **kwargs):
+        university= self.get_object
+        serializer = self.get_serializer(university, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({'detail':'Universidad actualizada correctamente'}, status= status.HTTP_200_OK)
+    
     # --- Custom actions ---
     @action(detail=False, methods=['get'], url_path='top-rated')
     def top_rated(self, request):
@@ -265,7 +291,30 @@ class UniversityViewSet(viewsets.ModelViewSet):
         annotated_qs = self._get_annotated_queryset().order_by('-review_count')[:limit]
         serializer = self.get_serializer(annotated_qs, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['delete'], url_path=r'remove-photo/(?P<photo_id>\d+)')
+    def remove_photo(self,request, pk=None, photo_id=None):
+        university=self.get_object()
+        try:
+            photo = PhotosUniversity.objects.get(id=photo_id,univeristy=university)
+        except PhotosUniversity.DoesNotExist:
+            return Response({'detail':'Foto no encontrada'}, status=status.HTTP_404_NOT_FOUND)
         
+        photo.delete()
+        return Response({'detail':'Foto eliminada correctamente'}, status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsProfileAdmin], parser_classes=[MultiPartParser, FormParser])
+    def add_photos(self,request,pk=None):
+        university = self.get_object
+        files = request.FILES.getlist('photos')
+
+        if not files:
+            return Response({'detail':'No se enviaron fotos'}, status=status.HTTP_400_BAD_REQUEST)
+
+        photos = [PhotosUniversity(university=university, photo=f) for f in files]
+        PhotosUniversity.objects.bulk_create(photos)
+
+        return Response({'detail':f'{len(files)} fotos agregadas'}, status=status.HTTP_201_CREATED)
 
 
 # --- ReviewViewSet ---
@@ -278,6 +327,12 @@ class ReviewViewSet(viewsets.ModelViewSet):
     filterset_fields = ['university', 'user']
     ordering_fields = ['start_date', 'overall_rating', 'academic_rating']
     ordering = ['-start_date']
+
+    def get_permissions(self):
+        if self.action in ['approve','reject']:
+            return [IsProfileAdmin()]
+        return [AllowAny]
+
 
     def get_queryset(self):
         """
@@ -325,7 +380,20 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(reviews, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['patch'], url_path='approve')
+    def approve(self, request, pk=None):
+        review = self.get_object()
+        review.is_approved=True
+        review.save(update_fields=['is_approved'])
+        return Response({'detail':'Review aprobada'}, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['delete'],url_path='reject')
+    def reject(self,request,pk=None):
+        review= self.get_object()
+        review.delete()
+        return Response({'detail':'Review rechazada (eliminada) correctamente'}, status=status.HTTP_204_NO_CONTENT)
+    
+    
 # --- WishlistViewSet ---
 class WishlistViewSet(viewsets.ModelViewSet):
     """

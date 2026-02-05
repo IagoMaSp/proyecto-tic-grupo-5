@@ -186,6 +186,40 @@ class UniversityDetailSerializer(UniversitySerializer):
 
 # --- Serializadores de Review ---
 
+class UniversityCreateSerializer(serializers.ModelSerializer):
+    faculties = serializers.PrimaryKeyRelatedField(queryset=Faculty.objects.all(), many=True)
+
+    class Meta:
+        model = University
+        fields= [
+            'name',
+            'country',
+            'continent',
+            'qs_rating_top',
+            'qs_rating_bottom',
+            'web_pages',
+            'status',
+            'description',
+            'faculties'
+        ]
+
+class UniversityUpdateSerializer(serializers.ModelSerializer):
+    faculties = serializers.PrimaryKeyRelatedField(queryset=Faculty.onjects.all(), many=True, required=False)
+
+    class Meta:
+        model = University
+        fields = [
+            'name',
+            'country',
+            'continent',
+            'qs_rating_top',
+            'qs_rating_bottom',
+            'web_pages',
+            'status',
+            'description',
+            'faculties'
+        ]
+
 class ReviewSerializer(serializers.ModelSerializer):
     """
     Serializador para el modelo Review.
