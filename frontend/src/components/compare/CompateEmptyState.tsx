@@ -1,14 +1,6 @@
 export default function CompareEmptyState() {
   return (
     <div className="compare-empty-state">
-      <div className="compare-empty-icon">
-        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-          <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-        </svg>
-      </div>
       <h2 className="compare-empty-title">Comenzá a comparar universidades</h2>
       <p className="compare-empty-text">
         Seleccioná hasta 3 universidades de tu Lista de Deseos o buscá en el campo de arriba para compararlas lado a lado

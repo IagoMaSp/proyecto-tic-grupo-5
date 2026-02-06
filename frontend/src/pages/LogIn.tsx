@@ -33,6 +33,8 @@ export default function LogIn() {
     }
   }, [navigate, isAuthenticated, from]);
 
+  const rememberedUsername = localStorage.getItem('rememberedUsername');
+
   const {
     formData,
     errors,
@@ -41,11 +43,17 @@ export default function LogIn() {
     handleSubmit,
   } = useAuthForm({
     initialValues: {
-      username: "",
+      username: rememberedUsername || "",
       password: "",
+      remember: !!rememberedUsername,
     },
     validate: validateLogin,
     onSubmit: async (data) => {
+      if (data.remember) {
+        localStorage.setItem('rememberedUsername', data.username);
+      } else {
+        localStorage.removeItem('rememberedUsername');
+      }
       await login(data.username, data.password);
       navigate(from, { replace: true });
     },

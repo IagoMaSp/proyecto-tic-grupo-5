@@ -90,7 +90,6 @@
 
 .submit-button:hover:not(:disabled) {
   background: var(--um-blue-600);
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(31, 94, 209, 0.3);
 }
 
