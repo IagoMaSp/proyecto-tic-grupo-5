@@ -77,13 +77,19 @@ export default function LoginForm({
         />
         
         <div className="form-options">
-          <label className="remember-me">
-            <input type="checkbox" name="remember" />
-            Recordarme
+          <label className="checkbox-wrapper">
+            <input 
+              type="checkbox" 
+              name="remember" 
+              checked={formData.remember || false}
+              onChange={onChange}
+            />
+            <span className="checkbox-custom"></span>
+            <span className="checkbox-text">Recordarme</span>
           </label>
-          <a href="/reset-password" tabIndex={-1} className="link-text">
+          <Link to="/reset-password" tabIndex={-1} className="link-text">
             ¿Olvidaste tu contraseña?
-          </a>
+          </Link>
         </div>
 
         <button type="submit" className="submit-button" disabled={isLoading}>

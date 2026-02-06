@@ -41,4 +41,5 @@ export interface AuthFormData {
   password: string;
   confirmPassword?: string;
   acceptTerms?: boolean;
+  remember?: boolean;
 }

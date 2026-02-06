@@ -65,6 +65,11 @@
   overflow: hidden;
 }
 
+.features-card:hover {
+  box-shadow: var(--um-blue-100);
+  border-color: var(--um-blue-500);
+}
+
 .features-card::before {
   content: '';
   position: absolute;

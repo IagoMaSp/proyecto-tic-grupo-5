@@ -11,8 +11,6 @@ export default function UniversityReviews({ reviews, universityName }: Universit
   const [sortBy, setSortBy] = useState<"recent" | "rating">("recent");
   // Estado para paginación
   const [visibleCount, setVisibleCount] = useState(25);
-  // Estado para el hover del botón "Ver más"
-  const [isHovered, setIsHovered] = useState(false);
 
   // Ordenar reviews
   const sortedReviews = [...reviews].sort((a, b) => {
@@ -84,23 +82,10 @@ export default function UniversityReviews({ reviews, universityName }: Universit
 
       {/* Botón Ver más mejorado */}
       {visibleCount < sortedReviews.length && (
-        <div style={{ textAlign: "center", marginTop: "30px", paddingBottom: "10px" }}>
+        <div className="load-more-container">
           <button 
             onClick={() => setVisibleCount(prev => prev + 25)}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            style={{
-              padding: "10px 28px",
-              backgroundColor: isHovered ? "#333" : "transparent",
-              color: isHovered ? "#fff" : "#555",
-              border: `2px solid ${isHovered ? "#333" : "#e0e0e0"}`,
-              borderRadius: "50px",
-              cursor: "pointer",
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              transition: "all 0.3s ease",
-              outline: "none"
-            }}
+            className="btn ghost"
           >
             Ver más reseñas
           </button>

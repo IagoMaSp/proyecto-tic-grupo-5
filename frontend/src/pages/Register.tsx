@@ -217,22 +217,23 @@ export default function Register() {
               />
 
               <div className="form-group">
-                <label className="terms-label">
+                <label className="checkbox-wrapper terms-label">
                   <input
                     type="checkbox"
                     name="acceptTerms"
                     checked={formData.acceptTerms || false}
                     onChange={handleChange}
-                    className={`terms-checkbox ${errors.acceptTerms ? "error" : ""}`}
+                    className={errors.acceptTerms ? "error" : ""}
                     disabled={isLoading}
                   />
-                  <span className="terms-text">
+                  <span className="checkbox-custom"></span>
+                  <span className="checkbox-text terms-text">
                     Acepto los{" "}
-                    <Link to="/terms" className="terms-link" target="_blank">
+                    <Link to="/terms" className="terms-link" target="_blank" onClick={(e) => e.stopPropagation()}>
                       términos y condiciones
                     </Link>{" "}
                     y la{" "}
-                    <Link to="/privacy" className="terms-link" target="_blank">
+                    <Link to="/privacy" className="terms-link" target="_blank" onClick={(e) => e.stopPropagation()}>
                       política de privacidad
                     </Link>
                   </span>

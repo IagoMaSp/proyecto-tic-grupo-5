@@ -15,8 +15,6 @@ export default function Reviews() {
   
   // Estado para controlar la cantidad de reseñas visibles
   const [visibleCount, setVisibleCount] = useState(25);
-  // Estado para el hover del botón "Ver más"
-  const [isHovered, setIsHovered] = useState(false);
 
   const fetchAllReviews = async () => {
     try {
@@ -89,24 +87,10 @@ export default function Reviews() {
 
             {/* Botón Ver más mejorado */}
             {visibleCount < reviews.length && (
-              <div style={{ textAlign: "center", marginTop: "2.5rem", paddingBottom: "1rem" }}>
+              <div className="load-more-container">
                 <button 
                   onClick={handleShowMore}
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                  style={{
-                    padding: "12px 32px",
-                    backgroundColor: isHovered ? "#222" : "transparent",
-                    color: isHovered ? "#fff" : "#222",
-                    border: "2px solid #222",
-                    borderRadius: "50px",
-                    cursor: "pointer",
-                    fontSize: "1rem",
-                    fontWeight: 600,
-                    transition: "all 0.3s ease",
-                    boxShadow: isHovered ? "0 4px 12px rgba(0,0,0,0.15)" : "none",
-                    outline: "none"
-                  }}
+                  className="btn ghost"
                 >
                   Ver más reseñas
                 </button>

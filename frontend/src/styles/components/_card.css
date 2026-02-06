@@ -11,5 +11,4 @@
 .card:hover {
   box-shadow: var(--shadow-lg);
   border-color: var(--um-blue-100);
-  transform: translateY(-2px);
 }
